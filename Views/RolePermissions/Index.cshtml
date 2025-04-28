@@ -3,53 +3,92 @@
 @{
     ViewData["Title"] = "Rollen-Berechtigungen verwalten";
     var allPerms = ViewBag.AllPermissions as IEnumerable<Permission>;
+
+    // Gruppieren nach Prefix im Enum-Namen (alles vor dem ersten '_')
+    var groupedPerms = allPerms
+        .OrderBy(p => p.ToString())
+        .GroupBy(p => {
+            var name = p.ToString();
+            return name.Contains('_')
+                ? name.Substring(0, name.IndexOf('_'))
+                : name;
+        });
 }
 
 <div class="max-w-6xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-    <h1 class="text-2xl font-bold mb-4">Rollen-Berechtigungen verwalten</h1>
-    <div class="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
-        <table class="min-w-full table-auto text-sm">
-            <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
-                <tr>
-                    <th class="px-4 py-2 text-left">Rolle</th>
-                    @foreach(var perm in allPerms)
-                    {
-                        <th class="px-4 py-2 text-center">@perm</th>
-                    }
-                    <th class="px-4 py-2"></th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                @foreach(var role in Model)
-                {
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <form asp-action="Update" method="post" class="flex w-full">
-                            <td class="px-4 py-2 flex items-center">
-                                <input type="hidden" name="roleId" value="@role.Id" />
-                                @role.Name
-                            </td>
-                            @foreach(var perm in allPerms)
-                            {
-                                var has = role.RolePermissions.Any(rp => rp.Permission == perm);
-                                <td class="px-4 py-2 text-center">
-                                    <input type="checkbox" name="selected" value="@perm" @(has ? "checked" : "") />
-                                </td>
-                            }
-                            <td class="px-4 py-2">
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">
-                                    Speichern
-                                </button>
-                            </td>
-                        </form>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-key text-yellow-600 dark:text-yellow-400"></i>
+                Rollen-Berechtigungen
+            </h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Lege fest, welche Berechtigungen jede Rolle besitzt.</p>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <a asp-controller="Roles" asp-action="Index" class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded shadow text-sm font-medium transition">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Zur Rollenübersicht
+            </a>
+        </div>
     </div>
+
+    @* Für jede Enum-Prefix-Gruppe eine eigene Tabelle *@
+    @foreach (var permGroup in groupedPerms)
+    {
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
+            Berechtigungen: @permGroup.Key
+        </h2>
+
+        <div class="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700 mb-8">
+            <table class="min-w-full table-auto text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
+                    <tr>
+                        <th class="px-4 py-2 text-left">Rolle</th>
+                        @* Nur die Enums dieser Gruppe als Spalten *@
+                        @foreach (var perm in permGroup)
+                        {
+                            <th class="px-4 py-2 text-center">@perm.GetDisplayName()</th>
+                        }
+                        <th class="px-4 py-2"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    @foreach (var role in Model.OrderBy(r => r.Name))
+                    {
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <form asp-action="Update" method="post" class="w-full flex items-center">
+                                <input type="hidden" name="roleId" value="@role.Id" />
+                                <td class="px-4 py-2 flex-1 font-medium text-gray-800 dark:text-gray-200">
+                                    @role.Name
+                                </td>
+                                @foreach (var perm in permGroup)
+                                {
+                                    var has = role.RolePermissions.Any(rp => rp.Permission == perm);
+                                    <td class="px-4 py-2 text-center">
+                                        <input type="checkbox"
+                                               name="selected"
+                                               value="@perm.ToString()" 
+                                               @(has ? "checked" : "")
+                                               class="form-checkbox h-4 w-4 text-indigo-600" />
+                                    </td>
+                                }
+                                <td class="px-4 py-2">
+                                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded shadow">
+                                        Speichern
+                                    </button>
+                                </td>
+                            </form>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <div id="rolePermissionsModalContainer"></div>
 </div>
 
 @section Scripts {
     <script>
-        // Optional: handle inline validation or AJAX submission
+        // Hier kannst du AJAX-Handler ergänzen, falls gewünscht
     </script>
 }

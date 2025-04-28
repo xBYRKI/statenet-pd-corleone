@@ -18,7 +18,7 @@ namespace statenet_lspd.Models
 
         [Display(Name = "Avatar URL")]
         [Column("avatar")]
-        public string? avatar { get; set; }
+        public string? Avatar { get; set; } // "avatar" umbenannt auf "Avatar" für Konsistenz
 
         [Display(Name = "Prefix")]
         [Column("prefix")]
@@ -28,7 +28,7 @@ namespace statenet_lspd.Models
         [Column("dienstnummer")]
         public int Dienstnummer { get; set; } // varchar(50)
 
-        [Required]
+        
         [Column("besoldung")]
         public int Besoldung { get; set; }
 
@@ -45,9 +45,9 @@ namespace statenet_lspd.Models
         [Column("teams_id")]
         public int? TeamId { get; set; }
 
-        [Required]
+       
         [Column("phone")]
-        public int Phone { get; set; }
+        public string? Phone { get; set; } // Telefonnummer als string für Flexibilität
 
         [Display(Name = "Gekündigt am")]
         [Column("fired_at")]
@@ -63,12 +63,11 @@ namespace statenet_lspd.Models
         [Column("total_hours")]
         public string? TotalHours { get; set; }
 
-        // Existing
         [Display(Name = "Letzter Login")]
         public DateTime? LastLogin { get; set; }
 
         public virtual ICollection<IdentityUserRole<string>> UserRoles { get; set; } = new List<IdentityUserRole<string>>();
 
-         public virtual ICollection<HRAction> HRActions { get; set; }
+        public virtual ICollection<HRAction> HRActions { get; set; }
     }
 }

@@ -7,7 +7,7 @@ using statenet_lspd.Data;
 
 namespace statenet_lspd.Controllers
 {
-    [Authorize(Roles = "Mitarbeiter")]
+    [Authorize(Policy = "Roles.View")]
     public class RolesController : Controller
     {
         private readonly RoleManager<ApplicationRole> _roleManager;
@@ -27,6 +27,7 @@ namespace statenet_lspd.Controllers
             _audit = audit;
         }
 
+        // List roles
         public async Task<IActionResult> Index()
         {
             var roles = await _roleManager.Roles.ToListAsync();
@@ -40,14 +41,16 @@ namespace statenet_lspd.Controllers
             return View(roles);
         }
 
-        // GET: /Roles/Create
+        // GET: Create Role Modal
+        [Authorize(Policy = "Roles.Create")]
         [HttpGet]
         public IActionResult Create()
         {
             return PartialView("_CreateRole", new ApplicationRole());
         }
 
-        // POST: /Roles/Create
+        // POST: Create Role
+        [Authorize(Policy = "Roles.Create")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ApplicationRole model)
@@ -59,7 +62,7 @@ namespace statenet_lspd.Controllers
             if (result.Succeeded)
             {
                 await _audit.LogAsync("Role.Created", $"Rolle '{model.Name}' wurde erstellt.");
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(Index));
             }
 
             foreach (var error in result.Errors)
@@ -68,7 +71,8 @@ namespace statenet_lspd.Controllers
             return PartialView("_CreateRole", model);
         }
 
-        // GET: /Roles/Edit/{id}
+        // GET: Edit Role Modal
+        [Authorize(Policy = "Roles.Edit")]
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
@@ -77,11 +81,15 @@ namespace statenet_lspd.Controllers
             return PartialView("_EditRole", role);
         }
 
-        // POST: /Roles/Edit
+        // POST: Edit Role
+        [Authorize(Policy = "Roles.Edit")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ApplicationRole model)
         {
+            if (!ModelState.IsValid)
+                return PartialView("_EditRole", model);
+
             var role = await _roleManager.FindByIdAsync(model.Id);
             if (role == null) return NotFound();
 
@@ -93,7 +101,7 @@ namespace statenet_lspd.Controllers
             if (result.Succeeded)
             {
                 await _audit.LogAsync("Role.Updated", $"Rolle '{model.Name}' wurde bearbeitet.");
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(Index));
             }
 
             foreach (var error in result.Errors)
@@ -102,7 +110,8 @@ namespace statenet_lspd.Controllers
             return PartialView("_EditRole", model);
         }
 
-        // GET: /Roles/Delete/{id}
+        // GET: Delete Role Modal
+        [Authorize(Policy = "Roles.Delete")]
         [HttpGet]
         public async Task<IActionResult> Delete(string id)
         {
@@ -114,7 +123,8 @@ namespace statenet_lspd.Controllers
             return PartialView("_DeleteRole", role);
         }
 
-        // POST: /Roles/Delete (ActionName="Delete")
+        // POST: Delete Role
+        [Authorize(Policy = "Roles.Delete")]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(string id)
@@ -126,12 +136,12 @@ namespace statenet_lspd.Controllers
             if (userCount > 0)
             {
                 TempData["Error"] = "Rolle kann nicht gelöscht werden, da noch Benutzer zugewiesen sind.";
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(Index));
             }
 
             await _roleManager.DeleteAsync(role);
             await _audit.LogAsync("Role.Deleted", $"Rolle '{role.Name}' wurde gelöscht.");
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
     }
 }

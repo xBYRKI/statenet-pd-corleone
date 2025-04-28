@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using statenet_lspd.Data;
 
@@ -11,9 +12,11 @@ using statenet_lspd.Data;
 namespace statenet_lspd.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250428190239_PhoneBesoldungNotRequired")]
+    partial class PhoneBesoldungNotRequired
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -280,6 +283,7 @@ namespace statenet_lspd.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("Phone")
+                        .IsRequired()
                         .HasColumnType("longtext")
                         .HasColumnName("phone");
 

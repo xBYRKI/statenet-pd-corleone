@@ -74,7 +74,7 @@
                 {
                     <div class="relative @profileClass" id="userMenuWrapper">
                         <button id="userMenuButton" class="flex items-center gap-3 focus:outline-none">
-                            <img src="@(UserManager.GetUserAsync(User).Result.avatar ?? "https://ia800305.us.archive.org/31/items/discordprofilepictures/discordblue.png")" class="w-9 h-9 rounded-full border border-gray-300 dark:border-gray-600 shadow" />
+                            <img src="@(UserManager.GetUserAsync(User).Result.Avatar ?? "https://ia800305.us.archive.org/31/items/discordprofilepictures/discordblue.png")" class="w-9 h-9 rounded-full border border-gray-300 dark:border-gray-600 shadow" />
                             <span class="hidden sm:block text-sm text-gray-700 dark:text-gray-200">
                                 [@(UserManager.GetUserAsync(User).Result.Dienstnummer <= 9 ? $"PD-0{UserManager.GetUserAsync(User).Result.Dienstnummer}" : $"PD-{UserManager.GetUserAsync(User).Result.Dienstnummer}")]
                                 @UserManager.GetUserAsync(User).Result.Displayname

@@ -1,4 +1,3 @@
-// Program.cs
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using statenet_lspd.Models;
@@ -8,12 +7,14 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using Microsoft.AspNetCore.Authorization;
 using statenet_lspd.Data;
+using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Serilog-Konfiguration
+// Serilog-Konfiguration mit Console-Sink
 Log.Logger = new LoggerConfiguration()
-    // hier kannst du Sinks hinzufügen (Datei, Seq, etc.)
+    .WriteTo.Console() // Aktiviert Konsolen-Logging
+    // hier kannst du weitere Sinks hinzufügen (Datei, Seq, etc.)
     .CreateLogger();
 builder.Host.UseSerilog();
 
@@ -33,6 +34,8 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
     options.User.RequireUniqueEmail = false;
+    // Optional: weiter Password-Optionen, z.B.
+    // options.Password.RequireNonAlphanumeric = false;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
@@ -88,6 +91,63 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+// Migrationen anwenden (stellt sicher, dass die Tabellen existieren)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+
+// Seed-Methode für Admin-User
+static async Task CreateAdminUserAsync(WebApplication app)
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();
+
+        try
+        {
+            Console.WriteLine("Erstelle Admin-User...");
+            var roleName = "Chief of Police";
+            if (!await roleManager.RoleExistsAsync(roleName))
+            {
+                await roleManager.CreateAsync(new ApplicationRole { Name = roleName });
+            }
+
+            var email = "lukas.birkenfeld@lspd.cc";
+            var adminUser = await userManager.FindByEmailAsync(email);
+            if (adminUser == null)
+            {
+                var newAdmin = new ApplicationUser
+                {
+                    UserName = "lukas.birkenfeld",
+                    Email = email,
+                    DiscordId = "196016388630904833"
+                    // Weitere Felder hier setzen
+                };
+
+                var result = await userManager.CreateAsync(newAdmin, "Rosas&&1120");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(newAdmin, roleName);
+                    Console.WriteLine("Admin-User erfolgreich angelegt.");
+                }
+                else
+                {
+                    Log.Error("Fehler beim Erstellen des Admin-Users: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Seed-Prozess fehlgeschlagen: {Message}", ex.Message);
+        }
+    }
+}
+await CreateAdminUserAsync(app);
 
 // Middleware-Pipeline
 if (app.Environment.IsDevelopment())

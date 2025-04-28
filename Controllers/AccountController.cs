@@ -197,7 +197,7 @@ namespace statenet_lspd.Controllers
             var oldPhone = user.Phone;
 
             user.Birthday = model.Birthday;
-            user.Phone = int.TryParse(model.Phone, out var ph) ? ph : 0;
+            user.Phone = model.Phone;
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
