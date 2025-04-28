@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace statenet_lspd.Models
 {
@@ -23,6 +24,8 @@ namespace statenet_lspd.Models
         public int Order { get; set; }
 
         public Guid? ParentId { get; set; }
+
+         [ValidateNever]
         public virtual MenuItem Parent { get; set; }
 
         // Hier auf string umgestellt:

@@ -4,125 +4,133 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using statenet_lspd.Models;
 
-namespace statenet_lspd.Controllers;
-
-[Authorize(Roles = "Mitarbeiter")]
-public class RolesController : Controller
+namespace statenet_lspd.Controllers
 {
-    private readonly RoleManager<ApplicationRole> _roleManager;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly ApplicationDbContext _context;
-    private readonly AuditService _audit;
-
-    public RolesController(
-        RoleManager<ApplicationRole> roleManager,
-        UserManager<ApplicationUser> userManager,
-        ApplicationDbContext context,
-        AuditService audit)
+    [Authorize(Roles = "Mitarbeiter")]
+    public class RolesController : Controller
     {
-        _roleManager = roleManager;
-        _userManager = userManager;
-        _context = context;
-        _audit = audit;
-    }
+        private readonly RoleManager<ApplicationRole> _roleManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ApplicationDbContext _context;
+        private readonly AuditService _audit;
 
-    public async Task<IActionResult> Index()
-    {
-        var roles = await _roleManager.Roles.ToListAsync();
-        var roleUserCounts = await _context.UserRoles
-            .GroupBy(ur => ur.RoleId)
-            .ToDictionaryAsync(g => g.Key, g => g.Count());
-
-        foreach (var role in roles)
+        public RolesController(
+            RoleManager<ApplicationRole> roleManager,
+            UserManager<ApplicationUser> userManager,
+            ApplicationDbContext context,
+            AuditService audit)
         {
-            role.UserCount = roleUserCounts.GetValueOrDefault(role.Id);
+            _roleManager = roleManager;
+            _userManager = userManager;
+            _context = context;
+            _audit = audit;
         }
 
-        return View(roles);
-    }
+        public async Task<IActionResult> Index()
+        {
+            var roles = await _roleManager.Roles.ToListAsync();
+            var roleUserCounts = await _context.UserRoles
+                .GroupBy(ur => ur.RoleId)
+                .ToDictionaryAsync(g => g.Key, g => g.Count());
 
-    [HttpGet]
-    public IActionResult Create()
-    {
-        return PartialView("_CreateRole", new ApplicationRole());
-    }
+            foreach (var role in roles)
+                role.UserCount = roleUserCounts.GetValueOrDefault(role.Id);
 
-    [HttpPost]
-    public async Task<IActionResult> Create(ApplicationRole model)
-    {
-        if (!ModelState.IsValid)
+            return View(roles);
+        }
+
+        // GET: /Roles/Create
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return PartialView("_CreateRole", new ApplicationRole());
+        }
+
+        // POST: /Roles/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(ApplicationRole model)
+        {
+            if (!ModelState.IsValid)
+                return PartialView("_CreateRole", model);
+
+            var result = await _roleManager.CreateAsync(model);
+            if (result.Succeeded)
+            {
+                await _audit.LogAsync("Role.Created", $"Rolle '{model.Name}' wurde erstellt.");
+                return RedirectToAction("Index");
+            }
+
+            foreach (var error in result.Errors)
+                ModelState.AddModelError(string.Empty, error.Description);
+
             return PartialView("_CreateRole", model);
-
-        var result = await _roleManager.CreateAsync(model);
-        if (result.Succeeded)
-        {
-            await _audit.LogAsync("Role.Created", $"Rolle '{model.Name}' wurde erstellt.");
-            return RedirectToAction("Index");
         }
 
-        foreach (var error in result.Errors)
-            ModelState.AddModelError("", error.Description);
-
-        return PartialView("_CreateRole", model);
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> Edit(string id)
-    {
-        var role = await _roleManager.FindByIdAsync(id);
-        return role == null ? NotFound() : PartialView("_EditRole", role);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Edit(ApplicationRole model)
-    {
-        var role = await _roleManager.FindByIdAsync(model.Id);
-        if (role == null) return NotFound();
-
-        role.Name = model.Name;
-        role.DiscordRoleId = model.DiscordRoleId;
-        role.ColorHex = model.ColorHex;
-
-        var result = await _roleManager.UpdateAsync(role);
-        if (result.Succeeded)
+        // GET: /Roles/Edit/{id}
+        [HttpGet]
+        public async Task<IActionResult> Edit(string id)
         {
-            await _audit.LogAsync("Role.Updated", $"Rolle '{model.Name}' wurde bearbeitet.");
-            return RedirectToAction("Index");
+            var role = await _roleManager.FindByIdAsync(id);
+            if (role == null) return NotFound();
+            return PartialView("_EditRole", role);
         }
 
-        foreach (var error in result.Errors)
-            ModelState.AddModelError("", error.Description);
-
-        return PartialView("_EditRole", model);
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> Delete(string id)
-    {
-        var role = await _roleManager.FindByIdAsync(id);
-        if (role == null) return NotFound();
-
-        var userCount = await _context.UserRoles.CountAsync(ur => ur.RoleId == id);
-        ViewBag.UserCount = userCount;
-
-        return PartialView("_DeleteRole", role);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> DeleteConfirmed(string id)
-    {
-        var role = await _roleManager.FindByIdAsync(id);
-        if (role == null) return NotFound();
-
-        var userCount = await _context.UserRoles.CountAsync(ur => ur.RoleId == id);
-        if (userCount > 0)
+        // POST: /Roles/Edit
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(ApplicationRole model)
         {
-            TempData["Error"] = "Rolle kann nicht gelöscht werden, da noch Benutzer zugewiesen sind.";
-            return RedirectToAction("Index");
+            var role = await _roleManager.FindByIdAsync(model.Id);
+            if (role == null) return NotFound();
+
+            role.Name = model.Name;
+            role.DiscordRoleId = model.DiscordRoleId;
+            role.ColorHex = model.ColorHex;
+
+            var result = await _roleManager.UpdateAsync(role);
+            if (result.Succeeded)
+            {
+                await _audit.LogAsync("Role.Updated", $"Rolle '{model.Name}' wurde bearbeitet.");
+                return RedirectToAction("Index");
+            }
+
+            foreach (var error in result.Errors)
+                ModelState.AddModelError(string.Empty, error.Description);
+
+            return PartialView("_EditRole", model);
         }
 
-        await _roleManager.DeleteAsync(role);
-        await _audit.LogAsync("Role.Deleted", $"Rolle '{role.Name}' wurde gelöscht.");
-        return RedirectToAction("Index");
+        // GET: /Roles/Delete/{id}
+        [HttpGet]
+        public async Task<IActionResult> Delete(string id)
+        {
+            var role = await _roleManager.FindByIdAsync(id);
+            if (role == null) return NotFound();
+
+            var userCount = await _context.UserRoles.CountAsync(ur => ur.RoleId == id);
+            ViewBag.UserCount = userCount;
+            return PartialView("_DeleteRole", role);
+        }
+
+        // POST: /Roles/Delete (ActionName="Delete")
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(string id)
+        {
+            var role = await _roleManager.FindByIdAsync(id);
+            if (role == null) return NotFound();
+
+            var userCount = await _context.UserRoles.CountAsync(ur => ur.RoleId == id);
+            if (userCount > 0)
+            {
+                TempData["Error"] = "Rolle kann nicht gelöscht werden, da noch Benutzer zugewiesen sind.";
+                return RedirectToAction("Index");
+            }
+
+            await _roleManager.DeleteAsync(role);
+            await _audit.LogAsync("Role.Deleted", $"Rolle '{role.Name}' wurde gelöscht.");
+            return RedirectToAction("Index");
+        }
     }
 }

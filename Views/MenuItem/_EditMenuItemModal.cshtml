@@ -57,13 +57,20 @@
             <!-- Rollen -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rollen</label>
-                <select name="selectedRoleIds" multiple class="mt-1 block w-full p-2 border rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200">
+                 <select name="selectedRoleIds" multiple class="…">
                     @{
-                        var roles = ViewData["Roles"] as List<ApplicationRole> ?? new();
-                        foreach (var role in roles)
-                        {
-                           
-                        }
+                    var roles = ViewData["Roles"] as List<ApplicationRole> ?? new();
+                    foreach (var role in roles)
+                    {
+                        // Prüfen, ob die Rolle aktuell beim MenuItem zugewiesen ist
+                        bool isSelected = Model.MenuItemRoles.Any(mr => mr.RoleId == role.Id);
+                    }
+                    }
+                    @foreach (var role in roles)
+                    {
+                        <option value="@role.Id" selected="@(Model.MenuItemRoles.Any(mr => mr.RoleId == role.Id) ? "selected" : null)">
+                        @role.Name
+                        </option>
                     }
                 </select>
             </div>

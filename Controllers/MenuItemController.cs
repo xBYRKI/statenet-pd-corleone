@@ -32,148 +32,125 @@ public class MenuItemController : Controller
     }
 
     // Create: Zeigt das Formular zum Erstellen eines neuen MenuItems
-    public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create()
     {
-        // Lade alle Rollen und Parent MenuItems für Dropdowns
+        // Load roles and parent menu items for dropdowns
         ViewBag.Roles = await _db.Roles.ToListAsync();
-        ViewBag.Parents = new SelectList(await _db.MenuItems.Where(x => x.ParentId == null).ToListAsync(), "Id", "Title");
+        ViewBag.Parents = new SelectList(
+            await _db.MenuItems.Where(x => x.ParentId == null).ToListAsync(),
+            "Id", "Title");
 
-        return PartialView("_CreateMenuItemModal");
-    }
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Create(MenuItem model, List<string> selectedRoleIds)
-{
-    // Debugging-Ausgabe: Zeige die übergebenen Daten
-    Console.WriteLine($"ParentId: {model.ParentId}");
-    Console.WriteLine($"Selected Roles: {string.Join(", ", selectedRoleIds)}");
-
-    // Überprüfen, ob ParentId den Wert für "Keine Kategorie" enthält
-    if (model.ParentId == Guid.Empty)  
-    {
-        model.ParentId = null;  // Setze ParentId auf null, wenn "Keine Kategorie" ausgewählt wurde
-    }
-
-    // Überprüfen, ob mindestens eine Rolle ausgewählt wurde
-    if (selectedRoleIds == null || !selectedRoleIds.Any())
-    {
-        ModelState.AddModelError("MenuItemRoles", "Mindestens eine Rolle muss ausgewählt werden.");
-    }
-
-    // Wenn ModelState ungültig ist, zurück zur View mit den Fehlern und Dropdowns
-    if (!ModelState.IsValid)
-    {
-        Console.WriteLine("ModelState is not valid. Displaying errors:");
-
-        // Zeige alle ModelState-Fehler
-        foreach (var key in ModelState.Keys)
+        // Instantiate model to avoid null Model in view
+        var model = new MenuItem
         {
-            foreach (var error in ModelState[key].Errors)
-            {
-                Console.WriteLine($"Error in {key}: {error.ErrorMessage}");
-            }
-        }
-
-        // Fehlerbehandlung und erneutes Laden der Dropdowns
-        ViewBag.Roles = await _db.Roles.ToListAsync();
-        ViewBag.Parents = new SelectList(await _db.MenuItems.Where(x => x.ParentId == null).ToListAsync(), "Id", "Title");
-
-        return View(model);  // Gibt das Modell und die Fehler zurück
-    }
-
-    // Wenn ModelState gültig ist, dann Speichern
-    model.Id = Guid.NewGuid();  // Generiere eine neue ID für das MenuItem
-    _db.MenuItems.Add(model);
-    await _db.SaveChangesAsync();
-
-    // Füge die zugehörigen Rollen hinzu
-    foreach (var roleId in selectedRoleIds)
-    {
-        var menuItemRole = new MenuItemRole
-        {
-            MenuItemId = model.Id
+            Order = 0,
+            Icon = string.Empty
         };
-        _db.MenuItemRoles.Add(menuItemRole);
-    }
-    await _db.SaveChangesAsync();
-
-    // Erfolgreiches Speichern
-    return RedirectToAction(nameof(Index));  // Zurück zur Index-Seite nach erfolgreichem Speichern
-}
-
-
-
-
-
-    // Edit: Zeigt das Formular zur Bearbeitung eines bestehenden MenuItems
-    public async Task<IActionResult> Edit(Guid id)
-    {
-        var menuItem = await _db.MenuItems
-            .Include(mi => mi.MenuItemRoles)
-            .ThenInclude(mr => mr.Role)
-            .FirstOrDefaultAsync(mi => mi.Id == id);
-
-        if (menuItem == null)
-        {
-            return NotFound();
-        }
-
-        // Lade Rollen und Parent MenuItems für Dropdowns
-        ViewBag.Roles = await _db.Roles.ToListAsync();
-        ViewBag.Parents = new SelectList(await _db.MenuItems.Where(x => x.ParentId == null).ToListAsync(), "Id", "Title");
-
-        return PartialView("_EditMenuItemModal", menuItem);
+        return PartialView("_CreateMenuItemModal", model);
     }
 
+    // POST: Create New MenuItem
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(MenuItem model, List<string> selectedRoleIds)
+    public async Task<IActionResult> Create(MenuItem model, List<string> selectedRoleIds)
     {
-        // Überprüfen, ob ParentId oder Section benötigt wird
-        if (model.ShouldValidateParentAndSection())
+        // If "Keine Kategorie" (empty GUID) submitted, treat as null
+        if (model.ParentId == Guid.Empty)
         {
-            ModelState.AddModelError("Section", "Die Sektion ist erforderlich, wenn das Menüpunkt eine Kategorie hat.");
+            model.ParentId = null;
         }
 
+        // Initialize roles list if null and require at least one role
+        selectedRoleIds ??= new List<string>();
+        if (!selectedRoleIds.Any())
+        {
+            ModelState.AddModelError("selectedRoleIds", "Mindestens eine Rolle muss ausgewählt werden.");
+        }
+
+        // Validate and return modal partial on error
         if (!ModelState.IsValid)
         {
-            // Fehlerbehandlung und Rückgabe der View mit den Fehlern
             ViewBag.Roles = await _db.Roles.ToListAsync();
-            ViewBag.Parents = new SelectList(await _db.MenuItems.Where(x => x.ParentId == null).ToListAsync(), "Id", "Title");
-
-            return View(model); // Oder eine PartialView, wenn du Modal verwendest
+            ViewBag.Parents = new SelectList(
+                await _db.MenuItems.Where(x => x.ParentId == null).ToListAsync(),
+                "Id", "Title");
+            return PartialView("_CreateMenuItemModal", model);
         }
 
-        var existingMenuItem = await _db.MenuItems
-            .Include(mi => mi.MenuItemRoles)
-            .FirstOrDefaultAsync(mi => mi.Id == model.Id);
+        // Create new MenuItem
+        model.Id = Guid.NewGuid();
+        _db.MenuItems.Add(model);
+        await _db.SaveChangesAsync();
 
-        if (existingMenuItem == null)
-        {
-            return NotFound();
-        }
-
-        // Entferne alle alten Rollen
-        _db.MenuItemRoles.RemoveRange(existingMenuItem.MenuItemRoles);
-
-        // Füge die neuen Rollen hinzu
+        // Assign roles
         foreach (var roleId in selectedRoleIds)
         {
             var menuItemRole = new MenuItemRole
             {
-                MenuItemId = model.Id
+                MenuItemId = model.Id,
+                RoleId     = roleId
             };
             _db.MenuItemRoles.Add(menuItemRole);
         }
+        await _db.SaveChangesAsync();
 
-        // Speichere die Änderungen am MenuItem
-        existingMenuItem.Title = model.Title;
-        existingMenuItem.Url = model.Url;
-        existingMenuItem.Icon = model.Icon;
-        existingMenuItem.Order = model.Order;
-        existingMenuItem.ParentId = model.ParentId;
+        return RedirectToAction(nameof(Index));
+    }
 
-        _db.MenuItems.Update(existingMenuItem);
+
+
+    // GET: Edit MenuItem
+    public async Task<IActionResult> Edit(Guid id)
+    {
+        var model = await _db.MenuItems
+            .Include(mi => mi.MenuItemRoles)
+            .FirstOrDefaultAsync(mi => mi.Id == id);
+        if (model == null) return NotFound();
+
+        ViewBag.Roles = await _db.Roles.ToListAsync();
+        ViewBag.Parents = new SelectList(
+            await _db.MenuItems.Where(x => x.ParentId == null).ToListAsync(),
+            "Id", "Title", model.ParentId);
+
+        return PartialView("_EditMenuItemModal", model);
+    }
+
+    // POST: Edit MenuItem
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(MenuItem model, List<string> selectedRoleIds)
+    {
+        // Treat empty GUID as no parent
+        if (model.ParentId == Guid.Empty) model.ParentId = null;
+
+        // Remove existing role mappings
+        var existing = await _db.MenuItemRoles
+            .Where(mr => mr.MenuItemId == model.Id).ToListAsync();
+        _db.MenuItemRoles.RemoveRange(existing);
+
+        // Add updated roles
+        selectedRoleIds ??= new List<string>();
+        foreach (var roleId in selectedRoleIds)
+        {
+            _db.MenuItemRoles.Add(new MenuItemRole
+            {
+                MenuItemId = model.Id,
+                RoleId     = roleId
+            });
+        }
+
+        // Return modal on validation errors
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Roles = await _db.Roles.ToListAsync();
+            ViewBag.Parents = new SelectList(
+                await _db.MenuItems.Where(x => x.ParentId == null).ToListAsync(),
+                "Id", "Title", model.ParentId);
+            return PartialView("_EditMenuItemModal", model);
+        }
+
+        // Persist changes
+        _db.MenuItems.Update(model);
         await _db.SaveChangesAsync();
 
         return RedirectToAction(nameof(Index));
