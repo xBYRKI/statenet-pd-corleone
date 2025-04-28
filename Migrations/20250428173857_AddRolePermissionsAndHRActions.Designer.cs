@@ -5,14 +5,15 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using statenet_lspd.Data;
 
 #nullable disable
 
 namespace statenet_lspd.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250420154900_Anweisungen")]
-    partial class Anweisungen
+    [Migration("20250428173857_AddRolePermissionsAndHRActions")]
+    partial class AddRolePermissionsAndHRActions
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -396,6 +397,103 @@ namespace statenet_lspd.Migrations
                     b.ToTable("Duties");
                 });
 
+            modelBuilder.Entity("statenet_lspd.Models.HRAction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("ActionType")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("Amount")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<DateTime>("EffectiveDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("NewRank")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<decimal?>("NewSalary")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("OldRank")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<decimal?>("OldSalary")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("HRActions");
+                });
+
+            modelBuilder.Entity("statenet_lspd.Models.MenuItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Order")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("MenuItems");
+                });
+
+            modelBuilder.Entity("statenet_lspd.Models.MenuItemRole", b =>
+                {
+                    b.Property<Guid>("MenuItemId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("RoleId")
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("MenuItemId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("MenuItemRoles");
+                });
+
             modelBuilder.Entity("statenet_lspd.Models.Paygrade", b =>
                 {
                     b.Property<int>("Id")
@@ -453,6 +551,19 @@ namespace statenet_lspd.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Ranks");
+                });
+
+            modelBuilder.Entity("statenet_lspd.Models.RolePermission", b =>
+                {
+                    b.Property<string>("RoleId")
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int>("Permission")
+                        .HasColumnType("int");
+
+                    b.HasKey("RoleId", "Permission");
+
+                    b.ToTable("RolePermissions");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.Sanktion", b =>
@@ -624,6 +735,57 @@ namespace statenet_lspd.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("statenet_lspd.Models.HRAction", b =>
+                {
+                    b.HasOne("statenet_lspd.Models.ApplicationUser", "User")
+                        .WithMany("HRActions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("statenet_lspd.Models.MenuItem", b =>
+                {
+                    b.HasOne("statenet_lspd.Models.MenuItem", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("statenet_lspd.Models.MenuItemRole", b =>
+                {
+                    b.HasOne("statenet_lspd.Models.MenuItem", "MenuItem")
+                        .WithMany("MenuItemRoles")
+                        .HasForeignKey("MenuItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("statenet_lspd.Models.ApplicationRole", "Role")
+                        .WithMany("MenuItemRoles")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MenuItem");
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("statenet_lspd.Models.RolePermission", b =>
+                {
+                    b.HasOne("statenet_lspd.Models.ApplicationRole", "Role")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("statenet_lspd.Models.UserInstructionAcceptance", b =>
                 {
                     b.HasOne("statenet_lspd.Models.ServiceInstruction", "Instruction")
@@ -645,12 +807,25 @@ namespace statenet_lspd.Migrations
 
             modelBuilder.Entity("statenet_lspd.Models.ApplicationRole", b =>
                 {
+                    b.Navigation("MenuItemRoles");
+
+                    b.Navigation("RolePermissions");
+
                     b.Navigation("UserRoles");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.ApplicationUser", b =>
                 {
+                    b.Navigation("HRActions");
+
                     b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("statenet_lspd.Models.MenuItem", b =>
+                {
+                    b.Navigation("Children");
+
+                    b.Navigation("MenuItemRoles");
                 });
 #pragma warning restore 612, 618
         }

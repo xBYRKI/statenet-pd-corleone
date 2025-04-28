@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using statenet_lspd.Data;
 using statenet_lspd.Models;
 using statenet_lspd.ViewModels;
 

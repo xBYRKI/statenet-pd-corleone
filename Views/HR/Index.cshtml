@@ -5,13 +5,15 @@
 @{
     ViewData["Title"] = "HR - Mitarbeiterverwaltung";
     var showTerminated = Context.Request.Query["showTerminated"].ToString() == "true";
-    var searchTerm     = Context.Request.Query["search"].ToString();
+    var searchTerm = Context.Request.Query["search"].ToString();
     var onlyDiscordVal = Context.Request.Query["onlyDiscord"].ToString();
-    var currentPage    = (int)(ViewBag.PageNumber ?? 1);
-    var totalPages     = (int)(ViewBag.TotalPages  ?? 1);
+    var currentPage = (int)(ViewBag.PageNumber ?? 1);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
 }
 
+<div id="hrModalContainer"></div>
 <div class="max-w-7xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div class="flex flex-col">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
@@ -25,29 +27,21 @@
     <!-- Tabs -->
     <nav class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
         <a asp-action="Index" asp-route-showTerminated="false" asp-route-search="@searchTerm" asp-route-onlyDiscord="@onlyDiscordVal"
-           class="px-4 py-2 -mb-px border-b-2 text-sm font-medium @(showTerminated ? "border-transparent text-gray-500 hover:text-gray-700" : "border-green-500 text-green-600")">
-            Aktive
-        </a>
+           class="px-4 py-2 -mb-px border-b-2 text-sm font-medium @(showTerminated ? "border-transparent text-gray-500 hover:text-gray-700" : "border-green-500 text-green-600")">Aktive</a>
         <a asp-action="Index" asp-route-showTerminated="true" asp-route-search="@searchTerm" asp-route-onlyDiscord="@onlyDiscordVal"
-           class="ml-4 px-4 py-2 -mb-px border-b-2 text-sm font-medium @(showTerminated ? "border-red-500 text-red-600" : "border-transparent text-gray-500 hover:text-gray-700")">
-            Gekündigte
-        </a>
+           class="ml-4 px-4 py-2 -mb-px border-b-2 text-sm font-medium @(showTerminated ? "border-red-500 text-red-600" : "border-transparent text-gray-500 hover:text-gray-700")">Gekündigte</a>
     </nav>
-
     <!-- Search/Form -->
     <form method="get" class="flex items-center mb-6">
         <input type="hidden" name="showTerminated" value="@(showTerminated ? "true" : "false")" />
-        <input name="search" value="@searchTerm" type="text" placeholder="Suchen..."
-               oninput="this.form.submit()"
+        <input name="search" value="@searchTerm" type="text" placeholder="Suchen..." oninput="this.form.submit()"
                class="flex-1 p-2 border rounded shadow-sm bg-white dark:bg-gray-700 dark:text-white" />
         <label class="ml-4 inline-flex items-center text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" name="onlyDiscord" value="true" @(onlyDiscordVal=="true"?"checked":"")
-                   onchange="this.form.submit()"
+            <input type="checkbox" name="onlyDiscord" value="true" @(onlyDiscordVal=="true"?"checked":"") onchange="this.form.submit()"
                    class="rounded border-gray-300 dark:border-gray-600" />
             <span class="ml-2">Nur mit Discord-ID</span>
         </label>
     </form>
-
     <!-- Table -->
     <div class="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
         <table class="min-w-full table-auto text-sm">
@@ -60,7 +54,7 @@
                     <th class="px-4 py-2 text-left">Letzter Login</th>
                     <th class="px-4 py-2 text-right">Aktionen</th>
                 </tr>
-            </thead> 
+            </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 @foreach(var user in Model)
                 {
@@ -85,12 +79,9 @@
                             </a>
                             @if(user.Status == true)
                             {
-                                <form asp-action="Terminate" asp-route-id="@user.Id" method="post" class="inline">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="text-red-600 hover:underline">
-                                        <i class="fa-solid fa-user-slash mr-1"></i> Kündigen
-                                    </button>
-                                </form>
+                                <button onclick="openTerminateModal('@user.Id')" class="text-red-600 hover:underline">
+                                    <i class="fa-solid fa-user-slash mr-1"></i> Kündigen
+                                </button>
                             }
                         </td>
                     </tr>
@@ -98,7 +89,6 @@
             </tbody>
         </table>
     </div>
-
     <!-- Pagination -->
     @if(totalPages > 1)
     {
@@ -118,3 +108,25 @@
         </nav>
     }
 </div>
+
+@section Scripts {
+    <script>
+        function openHireModal() {
+            fetch('@Url.Action("Hire","HR")')
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById('hrModalContainer').innerHTML = html;
+                    toggleModal('hireModal');
+                });
+        }
+        function openTerminateModal(id) {
+            fetch('@Url.Action("Terminate","HR")/' + id)
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById('hrModalContainer').innerHTML = html;
+                    toggleModal('terminateModal');
+                });
+        }
+        // TODO: Additional JS for Sanction, Promotion, Demotion, Suspension
+    </script>
+}

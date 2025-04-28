@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using statenet_lspd.Models;
+using statenet_lspd.Data;
 
 namespace statenet_lspd.Controllers
 {

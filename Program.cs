@@ -1,3 +1,4 @@
+// Program.cs
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using statenet_lspd.Models;
@@ -6,19 +7,17 @@ using AspNet.Security.OAuth.Discord;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using Microsoft.AspNetCore.Authorization;
+using statenet_lspd.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Serilog-Konfiguration
 Log.Logger = new LoggerConfiguration()
-    
+    // hier kannst du Sinks hinzufügen (Datei, Seq, etc.)
     .CreateLogger();
 builder.Host.UseSerilog();
 
-   /* .WriteTo.File("./log/log.txt",
-        rollingInterval: RollingInterval.Day,
-        shared: true) */
-// 🔌 MySQL-Datenbankverbindung
+// MySQL-Datenbankverbindung
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -29,7 +28,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 );
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// 🔐 Identity-Konfiguration mit ApplicationUser + Rollen
+// Identity-Konfiguration
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
@@ -45,18 +44,15 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
-// AuditService, HttpContextAccessor
+// AuditService und HttpContextAccessor
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddHttpContextAccessor();
 
-// ➕ Discord OAuth2 mit korrekten Default-Schemes
+// Discord OAuth2
 builder.Services.AddAuthentication(options =>
 {
-    // Anwendungscookie für eingeloggte Nutzer
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
-    // externer Cookie (speichert vorübergehend das ExternalLogin-Info)
     options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-    // Challenge – wenn nicht authentifiziert → Discord
     options.DefaultChallengeScheme = DiscordAuthenticationDefaults.AuthenticationScheme;
 })
 .AddDiscord(options =>
@@ -71,9 +67,29 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+// Authorization Policies based on Permissions
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("HR.View", policy =>
+        policy.RequireClaim("Permission", Permission.HR_View.ToString()));
+    options.AddPolicy("HR.Create", policy =>
+        policy.RequireClaim("Permission", Permission.HR_Create.ToString()));
+    options.AddPolicy("HR.Delete", policy =>
+        policy.RequireClaim("Permission", Permission.HR_Delete.ToString()));
+    options.AddPolicy("HR.Sanction", policy =>
+        policy.RequireClaim("Permission", Permission.HR_Sanction.ToString()));
+    options.AddPolicy("HR.Promotion", policy =>
+        policy.RequireClaim("Permission", Permission.HR_Promotion.ToString()));
+    options.AddPolicy("HR.Demotion", policy =>
+        policy.RequireClaim("Permission", Permission.HR_Demotion.ToString()));
+    options.AddPolicy("HR.Suspension", policy =>
+        policy.RequireClaim("Permission", Permission.HR_Suspension.ToString()));
+    // weitere Policies hinzufügen
+});
+
 var app = builder.Build();
 
-// 🌐 Middleware-Pipeline
+// Middleware-Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -100,14 +116,14 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// explizite Ausnahme für Public-Controller
+// Public controllers allow anonymous
 app.MapControllerRoute(
     name: "public",
     pattern: "Public/{action=Index}/{id?}",
     defaults: new { controller = "Public", action = "Index" }
 ).WithMetadata(new AllowAnonymousAttribute());
 
-// explizite Ausnahme für Account/ExternalLogin
+// Account external login
 app.MapControllerRoute(
     name: "login",
     pattern: "Account/{action=ExternalLogin}/{returnUrl?}",
@@ -117,8 +133,7 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}"
-)
-.WithMetadata(new AllowAnonymousAttribute());
+).WithMetadata(new AllowAnonymousAttribute());
 
 app.MapRazorPages();
 

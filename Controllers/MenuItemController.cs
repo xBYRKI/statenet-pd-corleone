@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using statenet_lspd.Models;
+using statenet_lspd.Data;
 
 public class MenuItemController : Controller
 {

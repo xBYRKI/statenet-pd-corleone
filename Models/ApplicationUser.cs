@@ -68,5 +68,7 @@ namespace statenet_lspd.Models
         public DateTime? LastLogin { get; set; }
 
         public virtual ICollection<IdentityUserRole<string>> UserRoles { get; set; } = new List<IdentityUserRole<string>>();
+
+         public virtual ICollection<HRAction> HRActions { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using statenet_lspd.Models;
 using System.Linq;
+using statenet_lspd.Data;
 using System.Threading.Tasks;
 
 public class SidebarViewComponent : ViewComponent

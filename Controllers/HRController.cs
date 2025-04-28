@@ -1,172 +1,103 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using statenet_lspd.Models;
-using statenet_lspd.ViewModels;
-using System.Threading.Tasks;
+using System;
 using System.Linq;
-using System.Collections.Generic;
+using System.Threading.Tasks;
+using statenet_lspd.Data;
 
 namespace statenet_lspd.Controllers
 {
-    [Authorize(Roles = "HR, Mitarbeiter")]
-    [Route("HR/[action]")]
+    [Authorize(Policy = "HR.View")]
     public class HRController : Controller
     {
+        private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ApplicationDbContext _context;
-        private readonly AuditService _audit;
 
-        public HRController(
-            UserManager<ApplicationUser> userManager,
-            ApplicationDbContext context,
-            AuditService audit)
+        public HRController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
         {
+            _db = db;
             _userManager = userManager;
-            _context = context;
-            _audit = audit;
         }
 
-        // Liste aller Mitarbeiter
-        // UsersController.cs → HRController.cs
-
-    // Index bekommt einen Parameter showTerminated (default = false)
-        public async Task<IActionResult> Index(bool showTerminated = false)
+        // GET: HR Index
+        public async Task<IActionResult> Index(bool showTerminated = false, string search = "", bool onlyDiscord = false, int page = 1)
         {
-            // Wir zeigen je nach Parameter nur Status = true oder Status = false
-            var usersQuery = _userManager.Users
-                .Where(u => (u.Status ?? false) == !showTerminated)
-                .OrderBy(u => u.Displayname);
+            IQueryable<ApplicationUser> query = _db.Users;
+            if (!showTerminated)
+                query = query.Where(u => u.Status == true);
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(u => u.Displayname.Contains(search) || u.UserName.Contains(search));
+            if (onlyDiscord)
+                query = query.Where(u => !string.IsNullOrEmpty(u.DiscordId));
 
-            var users = await usersQuery.ToListAsync();
+            var count = await query.CountAsync();
+            var list = await query
+                .OrderBy(u => u.Dienstnummer)
+                .Skip((page - 1) * 20)
+                .Take(20)
+                .ToListAsync();
 
+            ViewBag.PageNumber = page;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)count / 20);
             ViewBag.ShowTerminated = showTerminated;
-            return View(users);
+            ViewBag.Search = search;
+            ViewBag.OnlyDiscord = onlyDiscord;
+
+            return View(list);
         }
 
-
-        // GET: HR/Create
-        [HttpGet]
-        public IActionResult Create()
+        // GET: HR/Hire
+        [Authorize(Policy = "HR.Create")]
+        public IActionResult Hire()
         {
-            var vm = new EditUserViewModel
-            {
-                Dienstnummer = GenerateUniqueDienstnummer(),
-                // weitere Default-Werte
-            };
-            return View(vm);
+            var model = new HRAction { ActionType = HRActionType.Hire, EffectiveDate = DateTime.Today };
+            return PartialView("_HireModal", model);
         }
 
-        // POST: HR/Create
-        [HttpPost]
-        public async Task<IActionResult> Create(EditUserViewModel model)
+        // POST: HR/Hire
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Policy = "HR.Create")]
+        public async Task<IActionResult> Hire(HRAction model)
         {
             if (!ModelState.IsValid)
-                return View(model);
+                return PartialView("_HireModal", model);
 
-            var user = new ApplicationUser
-            {
-                UserName = model.UserName,
-                Displayname = model.Displayname,
-                Dienstnummer = model.Dienstnummer,
-                Status = true,
-                CreatedAt = DateTime.UtcNow
-            };
-            var result = await _userManager.CreateAsync(user);
-            if (!result.Succeeded)
-            {
-                foreach(var err in result.Errors)
-                    ModelState.AddModelError("", err.Description);
-                return View(model);
-            }
+            // Persist action
+            _db.HRActions.Add(model);
+            await _db.SaveChangesAsync();
 
-            await _audit.LogAsync("HR.Create", $"Mitarbeiter {user.Displayname} angelegt.");
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: HR/Edit/5
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Edit(string id)
-        {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
-            var vm = new EditUserViewModel
-            {
-                Id = user.Id,
-                UserName = user.UserName ?? "Unbekannt",
-                Displayname = user.Displayname,
-                Dienstnummer = user.Dienstnummer,
-                DiscordId = user.DiscordId,
-                Besoldung = user.Besoldung,
-                Status = user.Status ?? false,
-                Phone = user.Phone.ToString(),
-                FiredAt = user.FiredAt,
-                Birthday = user.Birthday,
-                TotalHours = user.TotalHours,
-                AllRoles = new List<SelectListItem>()
-            };
-            return View(vm);
-        }
-
-        // POST: HR/Edit
-        [HttpPost]
-        public async Task<IActionResult> Edit(EditUserViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            var user = await _userManager.FindByIdAsync(model.Id);
-            if (user == null) return NotFound();
-
-            user.Displayname = model.Displayname;
-            user.DiscordId = model.DiscordId;
-            user.Besoldung = model.Besoldung;
-            user.Status = model.Status;
-            user.Phone = int.Parse(model.Phone ?? "0");
-            user.FiredAt = model.FiredAt;
-            user.Birthday = model.Birthday;
-            user.TotalHours = model.TotalHours;
-
-            var result = await _userManager.UpdateAsync(user);
-            if (!result.Succeeded)
-            {
-                foreach (var err in result.Errors)
-                    ModelState.AddModelError("", err.Description);
-                return View(model);
-            }
-
-            await _audit.LogAsync("HR.Edit", $"Mitarbeiter {user.Displayname} bearbeitet.");
-            return RedirectToAction(nameof(Index));
-        }
-
-        // POST: HR/Terminate/5
-        [HttpPost("Terminate/{id}")]
+        // GET: HR/Terminate
+        [Authorize(Policy = "HR.Delete")]
         public async Task<IActionResult> Terminate(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
             if (user == null) return NotFound();
+            var model = new HRAction { ActionType = HRActionType.Termination, EffectiveDate = DateTime.Today, UserId = id };
+            return PartialView("_TerminateModal", model);
+        }
+
+        // POST: HR/Terminate
+        [HttpPost, ActionName("Terminate"), ValidateAntiForgeryToken]
+        [Authorize(Policy = "HR.Delete")]
+        public async Task<IActionResult> TerminateConfirmed(HRAction model)
+        {
+            if (!ModelState.IsValid)
+                return PartialView("_TerminateModal", model);
+
+            var user = await _userManager.FindByIdAsync(model.UserId);
             user.Status = false;
-            await _userManager.UpdateAsync(user);
-            // optional: lockout for login
-            user.LockoutEnabled = true;
-            user.LockoutEnd = DateTimeOffset.MaxValue;
-            await _userManager.UpdateAsync(user);
-            await _audit.LogAsync("HR.Terminate", $"Mitarbeiter {user.Displayname} gekündigt.");
+            _db.HRActions.Add(model);
+            await _db.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 
-        // TODO: Sanktionieren, Befördern, Degradieren
-        // hier später Actions implementieren
-
-        private int GenerateUniqueDienstnummer()
-        {
-            var used = _context.Users.Where(u => u.Dienstnummer != 0).Select(u => u.Dienstnummer).ToHashSet();
-            var rand = new Random();
-            int num;
-            do { num = rand.Next(1000, 10000); } while (used.Contains(num));
-            return num;
-        }
+        // TODO: Implement Sanction, Promotion, Demotion, Suspension flows similarly
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using statenet_lspd.Data;
 using statenet_lspd.Models;
 
 namespace statenet_lspd.Controllers;

@@ -1,6 +1,7 @@
 // Controllers/SanktionenController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using statenet_lspd.Data;
 using statenet_lspd.Models;
 
 public class SanktionenController : Controller
