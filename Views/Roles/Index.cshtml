@@ -13,11 +13,15 @@
             </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400">Verwalte alle verfügbaren Rollen für Mitarbeiter</p>
         </div>
-        <div class="mt-4 md:mt-0">
+        <div class="mt-4 md:mt-0 flex space-x-2">
             <button onclick="openCreateRoleModal()"
                     class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-medium transition">
                 <i class="fa-solid fa-plus mr-2"></i> Neue Rolle
             </button>
+            <a asp-controller="RolePermissions" asp-action="Index"
+               class="inline-flex items-center bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded shadow text-sm font-medium transition">
+                <i class="fa-solid fa-key mr-2"></i> Berechtigungen verwalten
+            </a>
         </div>
     </div>
 

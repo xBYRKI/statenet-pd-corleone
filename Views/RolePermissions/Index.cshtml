@@ -1,0 +1,55 @@
+@model IEnumerable<statenet_lspd.Models.ApplicationRole>
+@using statenet_lspd.Models
+@{
+    ViewData["Title"] = "Rollen-Berechtigungen verwalten";
+    var allPerms = ViewBag.AllPermissions as IEnumerable<Permission>;
+}
+
+<div class="max-w-6xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold mb-4">Rollen-Berechtigungen verwalten</h1>
+    <div class="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
+        <table class="min-w-full table-auto text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
+                <tr>
+                    <th class="px-4 py-2 text-left">Rolle</th>
+                    @foreach(var perm in allPerms)
+                    {
+                        <th class="px-4 py-2 text-center">@perm</th>
+                    }
+                    <th class="px-4 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                @foreach(var role in Model)
+                {
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <form asp-action="Update" method="post" class="flex w-full">
+                            <td class="px-4 py-2 flex items-center">
+                                <input type="hidden" name="roleId" value="@role.Id" />
+                                @role.Name
+                            </td>
+                            @foreach(var perm in allPerms)
+                            {
+                                var has = role.RolePermissions.Any(rp => rp.Permission == perm);
+                                <td class="px-4 py-2 text-center">
+                                    <input type="checkbox" name="selected" value="@perm" @(has ? "checked" : "") />
+                                </td>
+                            }
+                            <td class="px-4 py-2">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">
+                                    Speichern
+                                </button>
+                            </td>
+                        </form>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Optional: handle inline validation or AJAX submission
+    </script>
+}
