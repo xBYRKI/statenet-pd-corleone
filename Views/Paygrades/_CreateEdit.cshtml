@@ -1,0 +1,33 @@
+@model statenet_lspd.ViewModels.PaygradeViewModel
+
+<div id="@(Model.Id==0?"createPaygradeModal":"editPaygradeModal")" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            <i class="fa-solid fa-floppy-disk mr-2 text-green-500"></i>
+            @(Model.Id==0?"Neue Besoldungsstufe":"Besoldungsstufe bearbeiten")
+        </h2>
+        <form asp-action="@(Model.Id==0?"Create":"Edit")"
+              asp-controller="Paygrades"
+              method="post"
+              asp-antiforgery="true"
+              class="space-y-4">
+            @Html.AntiForgeryToken()
+
+            @if(Model.Id != 0) { <input type="hidden" asp-for="Id" /> }
+            <div>
+                <label asp-for="Besoldung" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Besoldungsstufe</label>
+                <input asp-for="Besoldung" type="number" class="block w-full border rounded p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                <span asp-validation-for="Besoldung" class="text-sm text-red-600"></span>
+            </div>
+            <div>
+                <label asp-for="DiscordRoleId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Discord-Rollen-ID</label>
+                <input asp-for="DiscordRoleId" class="block w-full border rounded p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                <span asp-validation-for="DiscordRoleId" class="text-sm text-red-600"></span>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="document.getElementById('@(Model.Id==0?"createPaygradeModal":"editPaygradeModal")').classList.add('hidden')" class="px-4 py-2 bg-gray-200 rounded">Abbrechen</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">Speichern</button>
+            </div>
+        </form>
+    </div>
+</div>

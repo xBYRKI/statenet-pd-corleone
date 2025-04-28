@@ -1,0 +1,49 @@
+@model statenet_lspd.ViewModels.RankViewModel
+<div id="@(Model.Id==0?"createRankModal":"editRankModal")" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl w-full max-w-md shadow-xl border border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-purple-500"></i>
+            @(Model.Id==0?"Neuen Rang erstellen":"Rang bearbeiten")
+        </h2>
+
+        <form asp-action="@(Model.Id==0?"Create":"Edit")" method="post" class="space-y-5" novalidate>
+            @if(Model.Id!=0) { <input type="hidden" asp-for="Id" /> }
+            <div>
+                <label asp-for="Name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                <input asp-for="Name" class="block w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                <span asp-validation-for="Name" class="text-sm text-red-600"></span>
+            </div>
+            <div>
+                <label asp-for="SortOrder" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sortierreihenfolge</label>
+                <input asp-for="SortOrder" type="number" class="block w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                <span asp-validation-for="SortOrder" class="text-sm text-red-600"></span>
+            </div>
+            <div>
+                <label asp-for="DiscordRoleId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Discord-Rollen-ID</label>
+                <input asp-for="DiscordRoleId" class="block w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+            </div>
+            <div>
+                <label asp-for="ColorHex" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Farbe (HEX)</label>
+                <input asp-for="ColorHex" type="color" class="w-16 h-10 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
+            </div>
+            <div>
+                <label asp-for="MinPayGrade" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mindestbesoldung</label>
+                <input asp-for="MinPayGrade" type="number" min="0" class="block w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                <span asp-validation-for="MinPayGrade" class="text-sm text-red-600"></span>
+            </div>
+            <div>
+                <label asp-for="MaxPayGrade" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Maximalbesoldung</label>
+                <input asp-for="MaxPayGrade" type="number" min="0" class="block w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                <span asp-validation-for="MaxPayGrade" class="text-sm text-red-600"></span>
+            </div>
+            <div class="flex justify-end gap-2 pt-4">
+                <button type="button" onclick="document.getElementById('@(Model.Id==0?"createRankModal":"editRankModal")').classList.add('hidden')" class="px-4 py-2 text-sm rounded-md bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white">
+                    Abbrechen
+                </button>
+                <button type="submit" class="px-4 py-2 text-sm rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> Speichern
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

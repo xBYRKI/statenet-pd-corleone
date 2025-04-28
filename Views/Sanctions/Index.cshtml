@@ -1,0 +1,121 @@
+@model IEnumerable<statenet_lspd.Models.Sanktion>?
+@using System;
+@using System.Linq;
+@{
+    ViewData["Title"] = "Sanktionskatalog";
+    var sanctions = Model ?? Enumerable.Empty<statenet_lspd.Models.Sanktion>();
+    var searchTerm = ViewData["SearchTerm"] as string;
+
+    if (!string.IsNullOrWhiteSpace(searchTerm))
+    {
+        sanctions = sanctions.Where(s =>
+            s.Vergehen.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            s.Beschreibung.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            s.Kategorie.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+        ).ToList();
+    }
+
+    var categories = sanctions.Select(s => s.Kategorie).Distinct().ToList();
+}
+
+<div class="max-w-6xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-indigo-600 dark:text-indigo-400"></i>
+                Sanktionskatalog
+            </h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Übersicht aller möglichen Sanktionen</p>
+        </div>
+        <!-- Suchformular -->
+        <form method="get" class="mt-4 md:mt-0 flex space-x-2">
+            <input type="text" name="searchTerm" value="@searchTerm" placeholder="Suche..."
+                   class="border rounded px-3 py-2 focus:outline-none focus:ring" />
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                <i class="fa-solid fa-magnifying-glass mr-1"></i> Suchen
+            </button>
+            @if (!string.IsNullOrEmpty(searchTerm))
+            {
+                <button type="button" onclick="window.location='@Url.Action("Index")'"
+                        class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Zurücksetzen
+                </button>
+            }
+        </form>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="tabs flex border-b border-gray-200 dark:border-gray-700 mb-6">
+        @for (int i = 0; i < categories.Count; i++)
+        {
+            var cat = categories[i];
+            var activeClass = i == 0
+                ? "border-blue-600 font-semibold text-blue-600"
+                : "text-gray-600 dark:text-gray-400 hover:text-blue-600";
+            <li class="-mb-px mr-1">
+                <a href="#tab-@i"
+                   class="tab-link inline-block py-2 px-4 @activeClass"
+                   data-tab-index="@i">@cat</a>
+            </li>
+        }
+    </ul>
+
+    <!-- Tab Contents -->
+    @for (int i = 0; i < categories.Count; i++)
+    {
+        var cat = categories[i];
+        var tabItems = sanctions.Where(s => s.Kategorie == cat);
+        var contentClasses = i == 0 ? "tab-content block" : "tab-content hidden";
+        <div id="tab-@i" class="@contentClasses">
+            <div class="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
+                <table class="min-w-full table-auto text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
+                        <tr>
+                            <th class="px-4 py-3 text-left">Vergehen</th>
+                            <th class="px-4 py-3 text-left">Beschreibung</th>
+                            <th class="px-4 py-3 text-left">Geldstrafe</th>
+                            <th class="px-4 py-3 text-left">Verwarnung</th>
+                            <th class="px-4 py-3 text-left">Degradierung</th>
+                            <th class="px-4 py-3 text-left">Suspendierung</th>
+                            <th class="px-4 py-3 text-left">Kündigung</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach (var s in tabItems)
+                        {
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                <td class="px-4 py-3">@s.Vergehen</td>
+                                <td class="px-4 py-3">@s.Beschreibung</td>
+                                <td class="px-4 py-3">@(s.Geldstrafe.HasValue ? s.Geldstrafe.Value.ToString("0.##") + " $" : "-")</td>
+                                <td class="px-4 py-3">@(s.Verwarnung ? "Ja" : "Nein")</td>
+                                <td class="px-4 py-3">@(s.Degradierung ? "Ja" : "Nein")</td>
+                                <td class="px-4 py-3">@(s.Suspendierung ? "Ja" : "Nein")</td>
+                                <td class="px-4 py-3">@(s.Kuendigung ? "Ja" : "Nein")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @section Scripts {
+    <script>
+        // Tab-Umschaltung
+        document.querySelectorAll('.tab-link').forEach(tab => {
+            tab.addEventListener('click', e => {
+                e.preventDefault();
+                var idx = tab.getAttribute('data-tab-index');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                document.querySelectorAll('.tab-link').forEach(t => {
+                    t.classList.remove('border-blue-600','font-semibold','text-blue-600');
+                    t.classList.add('text-gray-600','dark:text-gray-400');
+                });
+                tab.classList.add('border-blue-600','font-semibold','text-blue-600');
+                tab.classList.remove('text-gray-600','dark:text-gray-400');
+                document.getElementById('tab-' + idx).classList.remove('hidden');
+            });
+        });
+    </script>
+    }
+</div>

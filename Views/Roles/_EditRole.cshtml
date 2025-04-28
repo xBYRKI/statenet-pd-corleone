@@ -1,0 +1,38 @@
+@model ApplicationRole
+
+<div id="editRoleModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-xl border border-gray-200 dark:border-gray-700">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <i class="fa-solid fa-pen-to-square text-yellow-500"></i>
+            Rolle bearbeiten
+        </h2>
+
+        <form asp-action="Edit" method="post" class="space-y-5">
+            <input type="hidden" asp-for="Id" />
+
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rollenname</label>
+                <input asp-for="Name" class="block w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Discord-Rollen-ID</label>
+                <input asp-for="DiscordRoleId" class="block w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shadow-sm" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Farbe (HEX)</label>
+                <input asp-for="ColorHex" type="color" class="w-16 h-10 rounded border border-gray-300 dark:border-gray-600 cursor-pointer bg-transparent" />
+            </div>
+
+            <div class="flex justify-end gap-2 pt-4">
+                <button type="button" onclick="toggleModal('editRoleModal')" class="px-4 py-2 text-sm rounded-md bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white">
+                    Abbrechen
+                </button>
+                <button type="submit" class="px-4 py-2 text-sm rounded-md bg-yellow-500 hover:bg-yellow-600 text-white shadow">
+                    <i class="fa-solid fa-save mr-1"></i> Änderungen speichern
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

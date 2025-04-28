@@ -1,0 +1,68 @@
+@model MenuItem
+@using statenet_lspd.Models
+
+<div id="createMenuItemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-xl border border-gray-200 dark:border-gray-700">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <i class="fa-solid fa-plus text-green-500"></i>
+            Neuer Menüpunkt erstellen
+        </h2>
+
+        <form asp-action="Create" method="post" class="space-y-5">
+            <!-- Titel Eingabefeld -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titel</label>
+                <input asp-for="Title" class="block w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required />
+            </div>
+            
+            <!-- URL Eingabefeld -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL</label>
+                <input asp-for="Url" class="block w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required />
+            </div>
+            
+            <!-- Icon Eingabefeld (FontAwesome) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Icon (FontAwesome)</label>
+                <input asp-for="Icon" class="block w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required />
+            </div>
+            
+            <!-- Kategorie Dropdown -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kategorie</label>
+                <select asp-for="ParentId" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200">
+                    <option value="">Keine Kategorie</option>
+                    @foreach (var parent in ViewBag.Parents as IEnumerable<SelectListItem>)
+                    {
+                        @if (parent.Value == Model.ParentId?.ToString())
+                        {
+                            <option value="@parent.Value" selected>@parent.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@parent.Value">@parent.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+
+
+            <!-- Rollen Dropdown (Multiple Auswahl für Rollen) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rollen</label>
+                <select name="selectedRoleIds" class="mt-1 block w-full p-2 border border-gray-300 rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200" multiple>
+                    @foreach (var role in ViewData["Roles"] as List<ApplicationRole>)
+                    {
+                        <option value="@role.Id">@role.Name</option>
+                    }
+                </select>
+            </div>
+            
+            <!-- Buttons -->
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="toggleModal('createMenuItemModal')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">Abbrechen</button>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">Erstellen</button>
+            </div>
+        </form>
+    </div>    </div>
+</div>

@@ -1,0 +1,13 @@
+@model statenet_lspd.Models.Sanktion
+
+<div id="deleteSanktionModal" class="fixed inset-0 flex items-center justify-center bg-black/50 hidden">
+  <div class="bg-white dark:bg-gray-900 p-6 rounded-lg w-full max-w-md">
+    <h2 class="text-xl text-red-600 mb-4"><i class="fa-solid fa-trash"></i> Sanktion löschen</h2>
+    <p>Soll die Sanktion <strong>@Model.Vergehen</strong> wirklich gelöscht werden?</p>
+    <form asp-action="DeleteConfirmed" method="post" class="mt-4 flex justify-end space-x-2">
+      <input type="hidden" asp-for="Id" />
+      <button type="button" onclick="toggleModal('deleteSanktionModal')" class="px-4 py-2 bg-gray-300 rounded">Abbrechen</button>
+      <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Löschen</button>
+    </form>
+  </div>
+</div>

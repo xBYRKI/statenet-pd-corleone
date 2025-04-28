@@ -1,0 +1,66 @@
+@model List<MenuItem> 
+@using Microsoft.AspNetCore.Http
+@{
+    var currentPath = Context.Request.Path.Value?.TrimEnd('/') ?? string.Empty;
+
+    bool IsActive(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return false;
+
+        // Sonderfall für Root "/"
+        if (url == "/")
+            return currentPath == string.Empty || currentPath == "/";
+
+        return currentPath.StartsWith(url.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+    }
+
+    string GetClass(bool active, string color = "green") =>
+        active ? $"bg-gray-100 dark:bg-gray-800 text-{color}-500"
+               : $"hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-{color}-500";
+}
+
+<aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 min-h-screen hidden md:flex flex-col">
+    <!-- Logo -->
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+        <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">StateNET</h1>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 px-4 py-4 text-sm text-gray-700 dark:text-gray-300 space-y-4">
+        @foreach (var item in Model)
+        {
+            var isSectionOpen = item.Children.Any(child => IsActive(child.Url));
+            var isSectionActive = IsActive(item.Url);
+
+            if (item.Children.Any())
+            {
+                <details class="group [&[open]>summary]:text-green-600" @(isSectionOpen ? "open" : null)>
+                    <summary class="cursor-pointer flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid @item.Icon w-5"></i>
+                            @item.Title
+                        </span>
+                        <i class="fa-solid fa-chevron-right group-open:rotate-90 transition w-4"></i>
+                    </summary>
+                    <div class="pl-4 pt-2 flex flex-col gap-2 mt-1">
+                        @foreach (var child in item.Children)
+                        {
+                            var isActive = IsActive(child.Url);
+                            <a href="@child.Url" class="flex items-center gap-2 px-2 py-1 rounded @GetClass(isActive) pl-6"> <!-- Hier wird das Child Item eingerückt -->
+                                <i class="fa-solid @child.Icon w-5"></i> @child.Title
+                            </a>
+                        }
+                    </div>
+                </details>
+            }
+            else
+            {
+                var isActive = IsActive(item.Url);
+                <a href="@item.Url" class="flex items-center gap-2 px-2 py-1 rounded @GetClass(isActive)">
+                    <i class="fa-solid @item.Icon w-5"></i> @item.Title
+                </a>
+            }
+        }
+    </nav>
+</aside>

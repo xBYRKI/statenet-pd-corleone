@@ -1,0 +1,78 @@
+@model statenet_lspd.Models.MenuItem
+@using statenet_lspd.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<div id="editMenuItemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-xl border border-gray-200 dark:border-gray-700">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <i class="fa-solid fa-pen text-yellow-500"></i>
+            Menüpunkt bearbeiten
+        </h2>
+
+        <form asp-action="Edit" method="post" class="space-y-5">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="@Model.Id" />
+
+            <!-- Titel -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titel</label>
+                <input asp-for="Title" class="..." required />
+            </div>
+
+            <!-- URL -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL</label>
+                <input asp-for="Url" class="..." required />
+            </div>
+
+            <!-- Icon -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Icon</label>
+                <input asp-for="Icon" class="..." required />
+            </div>
+
+            <!-- Reihenfolge -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reihenfolge</label>
+                <input asp-for="Order" type="number" min="0" class="..." />
+            </div>
+
+            <!-- Kategorie (Parent) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kategorie</label>
+                <select name="ParentId" class="mt-1 block w-full p-2 border rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200">
+                    <option value="">Keine Kategorie</option>
+                    @{
+                        var current = Model.ParentId?.ToString() ?? "";
+                        var parents = ViewBag.Parents as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+                        foreach (var p in parents)
+                        {
+                            bool selected = p.Value == current;
+                            <option value="@p.Value" selected="@(selected ? "selected" : null)">@p.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Rollen -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rollen</label>
+                <select name="selectedRoleIds" multiple class="mt-1 block w-full p-2 border rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200">
+                    @{
+                        var roles = ViewData["Roles"] as List<ApplicationRole> ?? new();
+                        foreach (var role in roles)
+                        {
+                           
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end space-x-4 pt-4">
+                <button type="button" onclick="toggleModal('editMenuItemModal')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">Abbrechen</button>
+                <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md">Speichern</button>
+            </div>
+        </form>
+    </div>
+</div>

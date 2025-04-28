@@ -1,0 +1,130 @@
+@model IEnumerable<statenet_lspd.ViewModels.RankViewModel>
+@{
+    ViewData["Title"] = "Rangverwaltung";
+    var sortField = (string?)ViewBag.SortField ?? "SortOrder";
+    var sortDir   = (string?)ViewBag.SortDir   ?? "asc";
+    var page      = (int?)ViewBag.PageNumber   ?? 1;
+    var total     = (int?)ViewBag.TotalPages   ?? 1;
+}
+
+<div class="max-w-7xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-purple-600"></i> Ränge
+        </h1>
+        <button onclick="openCreateRankModal()"
+                class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm">
+            <i class="fa-solid fa-plus mr-2"></i> Neuer Rang
+        </button>
+    </div>
+
+    <div class="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
+        <table class="min-w-full table-auto text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left">
+                        <a href="?sortField=Name&sortDir=@(sortField=="Name" && sortDir=="asc" ? "desc" : "asc")"
+                           class="flex items-center gap-1">
+                            Name
+                            @if (sortField=="Name") {
+                                <i class="fa-solid @(sortDir=="asc"?"fa-arrow-up":"fa-arrow-down") text-xs"></i>
+                            }
+                        </a>
+                    </th>
+                    <th class="px-4 py-3 text-left">
+                        <a href="?sortField=SortOrder&sortDir=@(sortField=="SortOrder" && sortDir=="asc" ? "desc" : "asc")"
+                           class="flex items-center gap-1">
+                            Sortierung
+                            @if (sortField=="SortOrder") {
+                                <i class="fa-solid @(sortDir=="asc"?"fa-arrow-up":"fa-arrow-down") text-xs"></i>
+                            }
+                        </a>
+                    </th>
+                    <th class="px-4 py-3 text-left">Discord‑ID</th>
+                    <th class="px-4 py-3 text-left">Farbe</th>
+                    <th class="px-4 py-3 text-left">Mindest-Besoldung</th>
+                    <th class="px-4 py-3 text-left">Maximal-Besoldung</th>
+                    <th class="px-4 py-3 text-left">Anzahl Nutzer</th>
+                    <th class="px-4 py-3 text-right">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                @foreach (var rank in Model)
+                {
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        <td class="px-4 py-3">@rank.Name</td>
+                        <td class="px-4 py-3">@rank.SortOrder</td>
+                        <td class="px-4 py-3">@rank.DiscordRoleId</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-block w-4 h-4 mr-2 align-middle rounded"
+                                  style="background-color:@rank.ColorHex"></span>
+                            @rank.ColorHex
+                        </td>
+                        <td class="px-4 py-3">@rank.MinPayGrade</td>
+                        <td class="px-4 py-3">@rank.MaxPayGrade</td>
+                        <td class="px-4 py-3">@rank.UserCount</td>
+                        <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                            <button onclick="openEditRankModal(@rank.Id)"
+                                    class="text-blue-600 hover:underline">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i> Bearbeiten
+                            </button>
+                            <button onclick="openDeleteRankModal(@rank.Id)"
+                                    class="text-red-600 hover:underline">
+                                <i class="fa-solid fa-trash mr-1"></i> Löschen
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (total > 1)
+    {
+        <nav class="mt-4 flex justify-center">
+            <ul class="inline-flex -space-x-px">
+                @for (int p = 1; p <= total; p++)
+                {
+                    var current = p == page;
+                    <li>
+                        <a href="?page=@p&sortField=@sortField&sortDir=@sortDir"
+                           class="px-3 py-1 border @((current?"bg-indigo-600 text-white":"bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300")) hover:bg-indigo-500 hover:text-white">
+                            @p
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+
+    <div id="modalContainer"></div>
+</div>
+
+@section Scripts {
+    <script>
+        function openCreateRankModal() {
+            fetch('/Ranks/Create')
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('modalContainer').innerHTML = html;
+                    document.getElementById('createRankModal').classList.remove('hidden');
+                });
+        }
+        function openEditRankModal(id) {
+            fetch(`/Ranks/Edit/${id}`)
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('modalContainer').innerHTML = html;
+                    document.getElementById('editRankModal').classList.remove('hidden');
+                });
+        }
+        function openDeleteRankModal(id) {
+            fetch(`/Ranks/Delete/${id}`)
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('modalContainer').innerHTML = html;
+                    document.getElementById('deleteRankModal').classList.remove('hidden');
+                });
+        }
+    </script>
+}

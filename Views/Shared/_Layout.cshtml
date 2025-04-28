@@ -1,0 +1,128 @@
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+@using statenet_lspd.Models
+
+@using Microsoft.EntityFrameworkCore
+
+@inject ApplicationDbContext _db
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@functions {
+    public async Task<(bool hasPending, List<int> pendingList)> CheckPendingInstructions(UserManager<ApplicationUser> userManager, ApplicationDbContext db, ClaimsPrincipal user)
+    {
+        var currentUser = await userManager.GetUserAsync(user);
+        if (currentUser?.Id is null)
+            return (false, new());
+
+        var pendingList = await db.ServiceInstructions
+            .Where(si => si.IsActive)
+            .Where(si => !db.UserInstructionAcceptances
+                .Any(a => a.UserId == currentUser.Id && a.ServiceInstructionId == si.Id))
+            .Select(si => si.Id)
+            .ToListAsync();
+
+        return (pendingList.Any(), pendingList);
+    }
+}
+
+@{
+    var currentPath = Context.Request.Path.Value?.TrimEnd('/') ?? string.Empty;
+    var isConfirmPage = currentPath.Equals("/Account/ConfirmInstructions", StringComparison.OrdinalIgnoreCase);
+    var isAuth = User.Identity?.IsAuthenticated ?? false;
+
+    var (hasPending, pendingList) = await CheckPendingInstructions(UserManager, _db, User);
+    var profileClass = (hasPending && !isConfirmPage) ? "pointer-events-none opacity-50" : string.Empty;
+}
+
+
+<!DOCTYPE html>
+<html lang="de" class="h-full" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - StateNET</title>
+    <link href="~/css/output.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+        if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white font-sans">
+    <div class="min-h-screen flex">
+        @if (isAuth && hasPending && !isConfirmPage)
+        {
+            <aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 p-4">
+                <a href="/Account/ConfirmInstructions" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+                    <i class="fa-solid fa-scroll"></i> Dienstanweisungen bestätigen
+                </a>
+            </aside>
+        }
+        else if (isAuth)
+        {
+           <aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 min-h-screen hidden md:flex flex-col shadow">
+                @await Component.InvokeAsync("Sidebar")
+            </aside>
+        }
+
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col">
+            <header class="bg-white dark:bg-gray-800 shadow px-6 py-4 flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-white">@ViewData["Title"]</h2>
+                @if (User.Identity?.IsAuthenticated ?? false)
+                {
+                    <div class="relative @profileClass" id="userMenuWrapper">
+                        <button id="userMenuButton" class="flex items-center gap-3 focus:outline-none">
+                            <img src="@(UserManager.GetUserAsync(User).Result.avatar ?? "https://ia800305.us.archive.org/31/items/discordprofilepictures/discordblue.png")" class="w-9 h-9 rounded-full border border-gray-300 dark:border-gray-600 shadow" />
+                            <span class="hidden sm:block text-sm text-gray-700 dark:text-gray-200">
+                                [@(UserManager.GetUserAsync(User).Result.Dienstnummer <= 9 ? $"PD-0{UserManager.GetUserAsync(User).Result.Dienstnummer}" : $"PD-{UserManager.GetUserAsync(User).Result.Dienstnummer}")]
+                                @UserManager.GetUserAsync(User).Result.Displayname
+                            </span>
+                            <i class="fa-solid fa-chevron-down text-gray-500 dark:text-gray-300"></i>
+                        </button>
+                        <div id="userDropdown" class="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg hidden z-50">
+                            <a href="/Account/Profile" class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="fa-solid fa-user mr-2"></i> Profil
+                            </a>
+                            <form method="post" asp-controller="Account" asp-action="Logout">
+                                <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="ExternalLogin" asp-route-provider="Discord" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm">
+                        Mit Discord einloggen
+                    </a>
+                }
+            </header>
+
+            <section class="p-6">
+                @RenderBody()
+            </section>
+        </main>
+    </div>
+
+    @RenderSection("Scripts", required: false)
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('userMenuButton');
+            const menu = document.getElementById('userDropdown');
+            if (btn && menu) {
+                btn.addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('hidden'); });
+                document.addEventListener('click', () => menu.classList.add('hidden'));
+            }
+        });
+         function toggleModal(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle("hidden");
+        }
+
+
+    </script>
+</body>
+</html>

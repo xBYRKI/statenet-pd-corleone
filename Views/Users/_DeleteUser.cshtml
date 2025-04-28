@@ -1,0 +1,33 @@
+@using Microsoft.AspNetCore.Identity
+@using statenet_lspd.Models
+@inject RoleManager<ApplicationRole> RoleManager
+@using System.Security.Claims
+
+@model statenet_lspd.Models.ApplicationUser
+@inject RoleManager<ApplicationRole> RoleManager
+
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden" id="deleteUserModal">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md p-6">
+        <h2 class="text-xl font-semibold text-red-600 mb-4">
+            <i class="fa-solid fa-triangle-exclamation mr-2"></i> Mitarbeiter löschen
+        </h2>
+
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+            Bist du sicher, dass du den Mitarbeiter <strong>@Model.Displayname</strong> (@Model.UserName) löschen möchtest?
+            Diese Aktion kann nicht rückgängig gemacht werden.
+        </p>
+
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="toggleModal('deleteUserModal')" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">
+                    Abbrechen
+                </button>
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fa-solid fa-trash mr-1"></i> Löschen
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

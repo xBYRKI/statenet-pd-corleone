@@ -1,0 +1,121 @@
+@model List<MenuItem>
+@using statenet_lspd.Models
+
+<div class="max-w-6xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+            <i class="fa-solid fa-bars mr-2 text-indigo-600 dark:text-indigo-400"></i>
+            Menüpunktverwaltung
+        </h1>
+        <button type="button" onclick="openCreate()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-medium transition">
+            <i class="fa-solid fa-plus mr-2"></i> Neuer Menüpunkt
+        </button>
+    </div>
+
+    <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-md">
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left">Titel</th>
+                    <th class="px-4 py-3 text-left">URL</th>
+                    <th class="px-4 py-3 text-left">Icon</th>
+                    <th class="px-4 py-3 text-left">Kategorie</th>
+                    <th class="px-4 py-3 text-left">Rollen</th>
+                    <th class="px-4 py-3 text-left">Reihenfolge</th>
+                    <th class="px-4 py-3 text-right">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                @foreach (var item in Model)
+                {
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-4 py-3">@item.Title</td>
+                        <td class="px-4 py-3">@item.Url</td>
+                        <td class="px-4 py-3"><i class="fa-solid @item.Icon"></i></td>
+                        <td class="px-4 py-3">
+                            @foreach (var parent in ViewBag.Parents as IEnumerable<SelectListItem>)
+                            {
+                                @if (parent.Value == item.ParentId?.ToString())
+                                {
+                                    <span>@parent.Text</span>
+                                    break;
+                                }
+                            }
+                        </td>
+                        <td class="px-4 py-3">
+                            @foreach (var role in item.MenuItemRoles)
+                            {
+                                <span class="block text-sm">@role.Role.Name</span>
+                            }
+                        </td>
+                        <td class="px-4 py-3">
+                            <button class="text-gray-600 hover:text-gray-800" onclick="moveUp('@item.Id')">
+                                <i class="fa-solid fa-arrow-up"></i> Hoch
+                            </button>
+                            <button class="text-gray-600 hover:text-gray-800" onclick="moveDown('@item.Id')">
+                                <i class="fa-solid fa-arrow-down"></i> Runter
+                            </button>
+                        </td>
+                        <td class="px-4 py-3 text-right space-x-2">
+                            <button onclick="openEdit('@item.Id')" class="text-blue-600 hover:underline">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i> Bearbeiten
+                            </button>
+                            <button onclick="openDelete('@item.Id')" class="text-red-600 hover:underline">
+                                <i class="fa-solid fa-trash mr-1"></i> Löschen
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Hier wird der Container für die dynamisch geladenen Modals angezeigt -->
+<div id="modalContainer"></div>
+
+@section Scripts {
+    <script>
+        // Funktion für das Erstellen eines neuen Menüpunktes
+        function openCreate() {
+            fetch('/MenuItem/Create')  // Ruft die PartialView für das Erstellen eines Menüpunktes ab
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('modalContainer').innerHTML = html;
+                    toggleModal('createMenuItemModal');
+                });
+        }
+
+        // Funktion für das Bearbeiten eines bestehenden Menüpunktes
+        function openEdit(id) {
+            fetch(`/MenuItem/Edit/${id}`)  // Ruft die PartialView für das Bearbeiten eines Menüpunktes ab
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('modalContainer').innerHTML = html;
+                    toggleModal('editMenuItemModal');
+                });
+        }
+
+        // MoveUp: Verschiebt das MenuItem nach oben (ändert den Order)
+        function moveUp(id) {
+            fetch(`/MenuItem/MoveUp/${id}`)
+                .then(r => r.json())
+                .then(response => {
+                    location.reload();
+                });
+        }
+
+        function toggleModal(id) {
+            document.getElementById(id).classList.toggle('hidden');
+        }
+
+        // MoveDown: Verschiebt das MenuItem nach unten (ändert den Order)
+        function moveDown(id) {
+            fetch(`/MenuItem/MoveDown/${id}`)
+                .then(r => r.json())
+                .then(response => {
+                    location.reload();
+                });
+        }
+    </script>
+}

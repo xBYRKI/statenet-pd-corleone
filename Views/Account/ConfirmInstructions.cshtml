@@ -1,0 +1,50 @@
+@model statenet_lspd.ViewModels.ConfirmInstructionsViewModel
+@{
+    ViewData["Title"] = "Dienstanweisungen bestätigen";
+}
+
+<div class="max-w-4xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+        <i class="fa-solid fa-scroll text-indigo-600"></i>
+        Dienstanweisungen bestätigen
+    </h1>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+        Bevor Sie fortfahren können, bitten wir Sie, die folgenden Dienstanweisungen zu lesen und zu bestätigen.
+    </p>
+
+    <form asp-action="ConfirmInstructions" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-4"></div>
+
+        @foreach (var instr in Model.PendingInstructions)
+        {
+            <div class="mb-6 border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                    @instr.Title
+                </h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Gültig ab: @instr.EffectiveDate.ToString("dd.MM.yyyy")
+                </p>
+                <div class="prose dark:prose-invert mb-4">
+                    @Html.Raw(instr.ContentHtml)
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" 
+                           name="instructionIds" 
+                           value="@instr.Id" 
+                           id="chk_@instr.Id"
+                           class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                           required />
+                    <label for="chk_@instr.Id" class="ml-2 text-gray-700 dark:text-gray-300">
+                        Ich habe die Dienstanweisung gelesen und akzeptiere sie.
+                    </label>
+                </div>
+            </div>
+        }
+
+        <button type="submit"
+                class="mt-4 inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded shadow">
+            <i class="fa-solid fa-check mr-2"></i> Bestätigen und weiter
+        </button>
+    </form>
+</div>

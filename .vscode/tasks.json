@@ -1,0 +1,20 @@
+// .vscode/tasks.json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Publish & Deploy (Web Deploy)",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "publish",
+        "${workspaceFolder}/statenet-lspd.csproj",
+        "-c", "Release",
+        "-p:PublishProfile=lspd",
+        "-p:DeployOnPublish=true"
+      ],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    }
+  ]
+}

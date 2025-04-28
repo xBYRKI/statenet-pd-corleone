@@ -1,0 +1,107 @@
+@* Sidebar nur für authentifizierte Benutzer *@
+@using Microsoft.AspNetCore.Authorization
+
+@{
+    var isAuth = User?.Identity?.IsAuthenticated ?? false;
+    var currentPath = Context.Request.Path.Value?.TrimEnd('/') ?? string.Empty;
+
+    var isActiveHome = currentPath == string.Empty || currentPath == "/";
+
+    var activeHRList = currentPath.StartsWith("/HR/Index", StringComparison.OrdinalIgnoreCase);
+    var activeHRCreate = currentPath.StartsWith("/HR/Create", StringComparison.OrdinalIgnoreCase);
+    var isHRSectionOpen = activeHRList || activeHRCreate;
+
+    var activeUsers = currentPath.StartsWith("/Users", StringComparison.OrdinalIgnoreCase);
+    var activeRoles = currentPath.StartsWith("/Roles", StringComparison.OrdinalIgnoreCase);
+    var activeUnits = currentPath.StartsWith("/Units", StringComparison.OrdinalIgnoreCase);
+    var isAdminOpen = activeUsers || activeRoles || activeUnits;
+
+    var activeSank = currentPath.StartsWith("/Sanktionen", StringComparison.OrdinalIgnoreCase);
+    var activeInstr = currentPath.StartsWith("/Instructions", StringComparison.OrdinalIgnoreCase);
+    var activeAudit = currentPath.StartsWith("/Audit", StringComparison.OrdinalIgnoreCase);
+}
+
+@functions {
+    string ActiveClass(bool condition, string color = "indigo") =>
+        condition ? $"bg-gray-100 dark:bg-gray-800 text-{color}-500"
+                  : $"hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-{color}-500";
+}
+
+@if (isAuth)
+{
+    <aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 min-h-screen hidden md:flex flex-col">
+        <!-- Logo -->
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">StateNET</h1>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 px-4 py-4 text-sm text-gray-700 dark:text-gray-300 space-y-4">
+            <!-- Dashboard -->
+            <a href="/" class="flex items-center gap-2 px-2 py-1 rounded @ActiveClass(isActiveHome)">
+                <i class="fa-solid fa-chart-line w-5"></i>
+                Übersicht
+            </a>
+
+            <!-- HR -->
+            <div class="uppercase text-xs text-gray-400 tracking-widest px-2 mt-4">Human Resources</div>
+            <details class="group [&[open]>summary]:text-green-600" @(isHRSectionOpen ? "open" : "")>
+                <summary class="cursor-pointer flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-briefcase w-5"></i>
+                        Personalverwaltung
+                    </span>
+                    <i class="fa-solid fa-chevron-right group-open:rotate-90 transition w-4"></i>
+                </summary>
+                <div class="pl-4 pt-2 flex flex-col gap-2 mt-1">
+                    <a href="/HR/Index" class="flex items-center gap-2 px-2 py-1 rounded @ActiveClass(activeHRList, "green")">
+                        <i class="fa-solid fa-list"></i> Mitarbeiter
+                    </a>
+                    <a href="/HR/Create" class="flex items-center gap-2 px-2 py-1 rounded @ActiveClass(activeHRCreate, "green")">
+                        <i class="fa-solid fa-user-plus"></i> Neuer Mitarbeiter
+                    </a>
+                </div>
+            </details>
+
+            <!-- Admin -->
+            <div class="uppercase text-xs text-gray-400 tracking-widest px-2 mt-4">Administration</div>
+            <details class="group [&[open]>summary]:text-indigo-600" @(isAdminOpen ? "open" : "")>
+                <summary class="cursor-pointer flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-users w-5"></i>
+                        Benutzerverwaltung
+                    </span>
+                    <i class="fa-solid fa-chevron-right group-open:rotate-90 transition w-4"></i>
+                </summary>
+                <div class="pl-4 pt-2 flex flex-col gap-2 mt-1">
+                    <a href="/Users" class="flex items-center gap-2 px-2 py-1 rounded @ActiveClass(activeUsers)">
+                        <i class="fa-solid fa-user"></i> Benutzer
+                    </a>
+                    <a href="/Roles" class="flex items-center gap-2 px-2 py-1 rounded @ActiveClass(activeRoles)">
+                        <i class="fa-solid fa-shield-halved"></i> Rollen
+                    </a>
+                    <a href="/Units" class="flex items-center gap-2 px-2 py-1 rounded @ActiveClass(activeUnits)">
+                        <i class="fa-solid fa-people-group"></i> Einheiten
+                    </a>
+                </div>
+            </details>
+
+            <!-- Verwaltung -->
+            <div class="uppercase text-xs text-gray-400 tracking-widest px-2 mt-4">Verwaltung</div>
+            <div class="pl-2 flex flex-col gap-2">
+                <a href="/Sanktionen" class="flex items-center gap-2 px-2 py-1 rounded @ActiveClass(activeSank)">
+                    <i class="fa-solid fa-gavel w-5"></i> Sanktionskatalog
+                </a>
+                <a href="/Instructions" class="flex items-center gap-2 px-2 py-1 rounded @ActiveClass(activeInstr)">
+                    <i class="fa-solid fa-scroll w-5"></i> Dienstanweisungen
+                </a>
+            </div>
+
+            <!-- Audit -->
+            <a href="/Audit" class="flex items-center gap-2 px-2 py-1 rounded @ActiveClass(activeAudit)">
+                <i class="fa-solid fa-scroll w-5"></i>
+                Aktivitätsprotokoll
+            </a>
+        </nav>
+    </aside>
+}

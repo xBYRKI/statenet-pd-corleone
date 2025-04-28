@@ -1,0 +1,194 @@
+@model statenet_lspd.Models.ApplicationUser
+@using statenet_lspd.Helpers
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@using System
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext DbContext
+
+@{
+    ViewData["Title"] = "Mein Profil";
+    var roles = await UserManager.GetRolesAsync(Model);
+    var discordId = Model.DiscordId;
+    var tz = TimeZoneInfo.FindSystemTimeZoneById("Europe/Vienna");
+
+    // Dienste laden und filtern sowie paginieren
+    var filterDateStr = Context.Request.Query["date"].ToString();
+    var page = int.TryParse(Context.Request.Query["page"].ToString(), out var p) && p > 0 ? p : 1;
+    const int pageSize = 15;
+    var all = DbContext.Duties
+        .Where(d => d.DiscordId == discordId && d.StartTime.HasValue && d.EndTime.HasValue)
+        .OrderByDescending(d => d.StartTime)
+        .ToList();
+    IEnumerable<Duty> duties = all;
+    if (DateTime.TryParse(filterDateStr, out var dt))
+        duties = duties.Where(d => TimeZoneInfo.ConvertTimeFromUtc(d.StartTime.Value, tz).Date == dt.Date);
+    var totalCount = duties.Count();
+    var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+    duties = duties.Skip((page - 1) * pageSize).Take(pageSize);
+
+    // Statistik
+    var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+    var weekStart = now.Date.AddDays(-(int)now.DayOfWeek + 1);
+    var monthStart = new DateTime(now.Year, now.Month, 1);
+    Func<TimeSpan, string> FormatHM = ts => $"{(int)ts.TotalHours} Stunden {ts.Minutes} Minuten";
+    TimeSpan spanWeek = TimeSpan.FromHours(all.Where(d => TimeZoneInfo.ConvertTimeFromUtc(d.StartTime.Value, tz) >= weekStart)
+        .Sum(d => (d.EndTime.Value - d.StartTime.Value).TotalHours));
+    TimeSpan spanMonth = TimeSpan.FromHours(all.Where(d => TimeZoneInfo.ConvertTimeFromUtc(d.StartTime.Value, tz) >= monthStart)
+        .Sum(d => (d.EndTime.Value - d.StartTime.Value).TotalHours));
+    TimeSpan spanTotal = TimeSpan.FromHours(all.Sum(d => (d.EndTime.Value - d.StartTime.Value).TotalHours));
+}
+
+<div class="max-w-4xl mx-auto mt-12 space-y-6">
+    <!-- Profil bearbeiten Button -->
+    <div class="flex justify-end">
+       <button type="button"
+                onclick="document.getElementById('editModal').classList.remove('hidden')"
+                class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+        <i class="fa-solid fa-pen mr-2"></i> Profil bearbeiten
+        </button>
+
+    </div>
+
+    <!-- Zwei Cards nebeneinander: Avatar & Persönliche Daten -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
+        <!-- Avatar & Name gemeinsam (transparent) -->
+        <div class="rounded-lg p-6 flex items-center gap-4">
+            <img src="@(Model.avatar ?? "/images/default-avatar.png")" alt="Avatar" style="width:8vw;height:8vw;" class="rounded-full border-2 border-indigo-500" />
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">@Model.Displayname</h1>
+        </div>
+
+        <!-- Info Card: Personal & Rang -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 space-y-6">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Persönliche Daten</h3>
+                <ul class="space-y-2 text-gray-900 dark:text-gray-100">
+                    <li class="flex items-center gap-2">
+                        <i class="fa-solid fa-id-card text-gray-500 dark:text-gray-400"></i>
+                        <span class="font-medium">Angestellt am:</span> @Model.CreatedAt?.ToString("dd.MM.yyyy")
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i class="fa-solid fa-cake-candles text-gray-500 dark:text-gray-400"></i>
+                        <span class="font-medium">Geburtstag:</span> @(Model.Birthday.HasValue ? Model.Birthday.Value.ToString("dd.MM.yyyy") : "-")
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i class="fa-solid fa-phone text-gray-500 dark:text-gray-400"></i>
+                        <span class="font-medium">Telefon:</span> @Model.Phone
+                    </li>
+                </ul>
+            </div>
+            <hr>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Rang &amp; Besoldung</h3>
+                <ul class="space-y-2 text-gray-900 dark:text-gray-100">
+                    <li class="flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-gray-500 dark:text-gray-400"></i>
+                        <span class="font-medium">Rang:</span> @Model.RankId
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i class="fa-solid fa-euro-sign text-gray-500 dark:text-gray-400"></i>
+                        <span class="font-medium">Besoldung:</span> @Model.Besoldung
+                    </li>
+                </ul>
+            </div>
+            <hr>
+            <div>
+                <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Systemdaten</h3>
+                <ul class="space-y-3 text-gray-900 dark:text-gray-100">
+                    <li class="flex items-center gap-2">
+                        <i class="fa-solid fa-user text-gray-500 dark:text-gray-400"></i>
+                        <span class="font-medium">Username:</span> @Model.UserName
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i class="fa-brands fa-discord text-gray-500 dark:text-gray-400"></i>
+                        <span class="font-medium">Discord-ID:</span> @(Model.DiscordId ?? "-")
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dienstzeiten -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-list mr-2 text-purple-600"></i> Dienstzeiten
+            </h3>
+            <div class="flex items-center gap-2">
+                <form method="get" class="flex items-center gap-2">
+                    <input type="date" name="date" value="@filterDateStr" class="border rounded p-2" />
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">Filtern</button>
+                </form>
+                @if(!string.IsNullOrEmpty(filterDateStr))
+                {
+                    <a href="?" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Zurücksetzen</a>
+                }
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full table-auto text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
+                    <tr>
+                        <th class="px-4 py-2">Datum</th>
+                        <th class="px-4 py-2">Start</th>
+                        <th class="px-4 py-2">Ende</th>
+                        <th class="px-4 py-2">Dauer</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    @foreach(var d in duties)
+                    {
+                        var start = TimeZoneInfo.ConvertTimeFromUtc(d.StartTime.Value, tz);
+                        var end = TimeZoneInfo.ConvertTimeFromUtc(d.EndTime.Value, tz);
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-4 py-2">@start.ToString("dd.MM.yyyy")</td>
+                            <td class="px-4 py-2">@start.ToString("HH:mm")</td>
+                            <td class="px-4 py-2">@end.ToString("HH:mm")</td>
+                            <td class="px-4 py-2">@FormatHM(end - start)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if(totalPages > 1)
+        {
+            <nav class="mt-4 flex justify-center">
+                <ul class="inline-flex -space-x-px">
+                    @for(int i=1; i<=totalPages; i++)
+                    {
+                        var curr = i == page;
+                        <li>
+                            <a href="?page=@i&date=@filterDateStr" class="px-3 py-1 border @((curr?"bg-indigo-600 text-white":"bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300")) hover:bg-indigo-500 hover:text-white">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    }</div>
+
+    <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Profil bearbeiten</h2>
+            <button onclick="document.getElementById('editModal').classList.add('hidden')" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+        <form asp-action="Edit" asp-controller="Account" method="post" class="space-y-4">
+            <div>
+                <label asp-for="Birthday" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Geburtstag</label>
+                <input asp-for="Birthday" type="date" class="mt-1 block w-full border rounded p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+            </div>
+            <div>
+                <label asp-for="Phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefon</label>
+                <input asp-for="Phone" type="tel" class="mt-1 block w-full border rounded p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">Abbrechen</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded">Speichern</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</div>

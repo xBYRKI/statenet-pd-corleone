@@ -1,0 +1,35 @@
+@model IEnumerable<statenet_lspd.ViewModels.DutyViewModel>
+@{
+    ViewData["Title"] = "Dienste Übersicht";
+    var periodType  = ViewBag.PeriodType as string ?? "Week";
+    var periodValue = ViewBag.PeriodValue as string ?? "";
+    var sortField   = ViewBag.SortField as string ?? "StartTime";
+    var sortDir     = ViewBag.SortDir as string ?? "asc";
+    var total       = (TimeSpan)(ViewBag.TotalDuration ?? TimeSpan.Zero);
+}
+
+<div class="max-w-7xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Dienste-Verwaltung</h1>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            In dieser @periodType: @periodValue insgesamt @total.Hours Stunden @total.Minutes Minuten Dienst
+        </span>
+    </div>
+
+    <!-- Filter & Periodenauswahl -->
+    <form method="get" class="flex flex-col md:flex-row md:items-end gap-4 mb-6">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kalenderwoche</label>
+            <input type="number" name="periodValue" min="1" max="53" value="@periodValue" placeholder="z.B. 17"
+                   class="mt-1 w-32 p-2 border rounded-md dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200" />
+        </div>
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow-sm transition">
+            <i class="fa-solid fa-filter mr-1"></i> Anwenden
+        </button>
+    </form>
+
+    <!-- Tabelle -->
+    <div class="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
+        <!-- Table header & body omitted for brevity -->
+    </div>
+</div>

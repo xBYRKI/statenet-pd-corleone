@@ -1,0 +1,51 @@
+@model statenet_lspd.Models.ServiceInstruction
+@{
+    ViewData["Title"] = "Neue Dienstanweisung anlegen";
+}
+
+<div class="max-w-6xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+        <i class="fa-solid fa-plus text-indigo-600 mr-2"></i>
+        Neue Dienstanweisung
+    </h1>
+
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-4"></div>
+
+        <div class="mb-4">
+            <label asp-for="Title" class="block text-gray-700 dark:text-gray-300 mb-2">Titel</label>
+            <input asp-for="Title" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white" />
+            <span asp-validation-for="Title" class="text-red-500 text-sm"></span>
+        </div>
+
+        <div class="mb-6">
+            <label asp-for="ContentHtml" class="block text-gray-700 dark:text-gray-300 mb-2">Inhalt (HTML)</label>
+            <textarea asp-for="ContentHtml" id="ContentHtml" rows="10" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"></textarea>
+            <span asp-validation-for="ContentHtml" class="text-red-500 text-sm"></span>
+        </div>
+
+        <div class="flex items-center">
+            <button type="submit" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow">
+                <i class="fa-solid fa-check mr-2"></i>Erstellen
+            </button>
+            <a asp-action="Index" class="ml-4 text-gray-600 hover:underline">Abbrechen</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.tiny.cloud/1/wt6izu4s7a398abzlc42mvkau1ldwzzqnccgt5mq3tx2hbvg/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script>
+        tinymce.init({
+            selector: '#ContentHtml',
+            height: 300,
+            menubar: false,
+            plugins: [
+                'advlist autolink lists link charmap preview anchor',
+                'searchreplace visualblocks code fullscreen',
+                'insertdatetime media table paste help wordcount'
+            ],
+            toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help'
+        });
+    </script>
+}

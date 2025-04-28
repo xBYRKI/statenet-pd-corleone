@@ -1,0 +1,14 @@
+@model statenet_lspd.ViewModels.PaygradeViewModel
+<div id="deletePaygradeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            <i class="fa-solid fa-trash text-red-500 mr-2"></i>Besoldungsstufe löschen
+        </h2>
+        <p>Sind Sie sicher, dass Sie die Besoldungsstufe <strong>@Model.Id</strong> löschen möchten?</p>
+        <form asp-action="Delete" method="post" class="mt-4 flex justify-end space-x-2">
+            <input type="hidden" asp-for="Id" />
+            <button type="button" onclick="document.getElementById('deletePaygradeModal').classList.add('hidden')" class="px-4 py-2 bg-gray-200 rounded">Abbrechen</button>
+            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">Löschen</button>
+        </form>
+    </div>
+</div>
