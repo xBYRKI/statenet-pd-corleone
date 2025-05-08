@@ -1,17 +1,33 @@
+@addTagHelper *, Microsoft.AspNetCore.Authorization.TagHelpers
 @model IEnumerable<statenet_lspd.ViewModels.PaygradeViewModel>
+@using statenet_lspd.Models   @* Für nameof(Permission.Paygrade_*) *@
+@using Microsoft.AspNetCore.Authorization  @* für IAuthorizationService *@
+@inject Microsoft.AspNetCore.Authorization.IAuthorizationService AuthorizationService
 @{
     ViewData["Title"] = "Besoldungsstufen";
 }
 
+@* DEBUG-Bereich: Zeigt, ob der User die Policies hat *@
+@{
+    var canCreate = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Paygrade_Create))).Succeeded;
+    var canEdit   = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Paygrade_Edit))).Succeeded;
+    var canDelete = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Paygrade_Delete))).Succeeded;
+}
 <div class="max-w-7xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <i class="fa-solid fa-layer-group text-green-600"></i> Besoldungsstufen
         </h1>
-        <button onclick="openCreatePaygradeModal()"
-                class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm">
-            <i class="fa-solid fa-plus mr-2"></i> Neue Besoldungsstufe
-        </button>
+
+        @* “Neue Besoldungsstufe” nur wenn Paygrade_Create *@
+        @if (canCreate)
+        {
+            <button onclick="openCreatePaygradeModal()"
+                    class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm">
+                <i class="fa-solid fa-plus mr-2"></i> Neue Besoldungsstufe
+            </button>
+        }
     </div>
 
     <div class="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
@@ -19,7 +35,7 @@
             <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
                 <tr>
                     <th class="px-4 py-3 text-left">Besoldungsstufe</th>
-                    <th class="px-4 py-3 text-left">Discord‑Rollen‑ID</th>
+                    <th class="px-4 py-3 text-left">Discord-Rollen-ID</th>
                     <th class="px-4 py-3 text-left">Anzahl Nutzer</th>
                     <th class="px-4 py-3 text-right">Aktionen</th>
                 </tr>
@@ -32,14 +48,25 @@
                         <td class="px-4 py-3">@pg.DiscordRoleId</td>
                         <td class="px-4 py-3">@pg.UserCount</td>
                         <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                            <button onclick="openEditPaygradeModal(@pg.Id)"
-                                    class="text-blue-600 hover:underline">
-                                <i class="fa-solid fa-pen-to-square mr-1"></i> Bearbeiten
-                            </button>
-                            <button onclick="openDeletePaygradeModal(@pg.Id)"
-                                    class="text-red-600 hover:underline">
-                                <i class="fa-solid fa-trash mr-1"></i> Löschen
-                            </button>
+
+                            @* Bearbeiten nur wenn Paygrade_Edit *@
+                            @if (canEdit)
+                            {
+                                <button onclick="openEditPaygradeModal(@pg.Id)"
+                                        class="text-blue-600 hover:underline">
+                                    <i class="fa-solid fa-pen-to-square mr-1"></i> Bearbeiten
+                                </button>
+                            }
+
+                            @* Löschen nur wenn Paygrade_Delete *@
+                            @if (canDelete)
+                            {
+                                <button onclick="openDeletePaygradeModal(@pg.Id)"
+                                        class="text-red-600 hover:underline">
+                                    <i class="fa-solid fa-trash mr-1"></i> Löschen
+                                </button>
+                            }
+
                         </td>
                     </tr>
                 }

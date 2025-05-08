@@ -10,7 +10,7 @@ using statenet_lspd.Data;
 
 namespace statenet_lspd.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = nameof(Permission.Instructions_View))]
     public class InstructionsController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -21,6 +21,7 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: Instructions
+        [Authorize(Policy = nameof(Permission.Instructions_View))]
         public async Task<IActionResult> Index()
         {
             var instructions = await _db.ServiceInstructions
@@ -30,6 +31,7 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: Instructions/Details/5
+        [Authorize(Policy = nameof(Permission.Instructions_View))]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -44,11 +46,13 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: Instructions/Create
+        [Authorize(Policy = nameof(Permission.Instructions_Add))]
         public IActionResult Create()
         {
             return View();
         }
 
+        [Authorize(Policy = nameof(Permission.Instructions_Add))]
         // POST: Instructions/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -64,6 +68,7 @@ namespace statenet_lspd.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [Authorize(Policy = nameof(Permission.Instructions_Edit))]
         // GET: Instructions/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
@@ -78,6 +83,7 @@ namespace statenet_lspd.Controllers
         }
 
         // POST: Instructions/Edit/5
+        [Authorize(Policy = nameof(Permission.Instructions_Edit))]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, ServiceInstruction model)
@@ -104,6 +110,7 @@ namespace statenet_lspd.Controllers
         }
 
         // POST: Instructions/Deactivate/5
+        [Authorize(Policy = nameof(Permission.Instructions_Edit))]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Deactivate(int id)
@@ -120,6 +127,7 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: Instructions/Delete/5
+        [Authorize(Policy = nameof(Permission.Instructions_Delete))]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -134,6 +142,7 @@ namespace statenet_lspd.Controllers
         }
 
         // POST: Instructions/Delete/5
+        [Authorize(Policy = nameof(Permission.Instructions_Delete))]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

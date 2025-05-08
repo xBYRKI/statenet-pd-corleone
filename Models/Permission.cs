@@ -44,6 +44,30 @@ namespace statenet_lspd.Models
 
         [Display(Name = "Rollenberechtigung bearbeiten")]
         RolesPerm_Update,
+
+        [Display(Name = "Besoldungsstufen anzeigen")]
+        Paygrade_View,
+
+        [Display(Name = "Besoldungsstufe anlegen")]
+        Paygrade_Create,
+
+        [Display(Name = "Besoldungsstufe bearbeiten")]
+        Paygrade_Edit,
+
+        [Display(Name = "Besoldungsstufe löschen")]
+        Paygrade_Delete,
+
+        [Display(Name = "Dienstanweisungen verwalten")]
+        Instructions_View,
+
+        [Display(Name = "Dienstanweisungen erstellen")]
+        Instructions_Add,
+
+        [Display(Name = "Dienstanweisungen bearbeiten")]
+        Instructions_Edit,
+
+        [Display(Name = "Dienstanweisungen löschen")]
+        Instructions_Delete,
         // weitere Permissions...
     }
 

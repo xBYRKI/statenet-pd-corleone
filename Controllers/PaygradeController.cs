@@ -1,35 +1,39 @@
-// PaygradesController.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using statenet_lspd.Data;
 using statenet_lspd.Models;
 using statenet_lspd.ViewModels;
-using System.Threading.Tasks;
-using statenet_lspd.Data;
-using System.Linq;
 using System.Collections.Generic;
-using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace statenet_lspd.Controllers
 {
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = nameof(Permission.Paygrade_View))]
     public class PaygradesController : Controller
     {
         private readonly ApplicationDbContext _db;
         private readonly AuditService _audit;
+        private readonly IAuthorizationService _auth;
 
-        public PaygradesController(ApplicationDbContext db, AuditService audit)
+        public PaygradesController(
+            ApplicationDbContext db,
+            AuditService audit,
+            IAuthorizationService auth)
         {
-            _db = db;
+            _db    = db;
             _audit = audit;
+            _auth  = auth;
         }
 
-        // GET: /Paygrades
+        // LIST
         [HttpGet]
         public async Task<IActionResult> Index()
         {
+            // 1. Daten laden
             var paygrades = await _db.Paygrades.ToListAsync();
-            var ids = paygrades.Select(pg => pg.Id).ToList();
+            var ids       = paygrades.Select(pg => pg.Id).ToList();
 
             var counts = await _db.Users
                 .Where(u => ids.Contains(u.Besoldung) && u.Status == true)
@@ -39,52 +43,61 @@ namespace statenet_lspd.Controllers
 
             var countDict = counts.ToDictionary(x => x.PaygradeId, x => x.Count);
 
-            var list = paygrades.Select(p => new PaygradeViewModel
+            var vmList = paygrades.Select(p => new PaygradeViewModel
             {
                 Id            = p.Id,
                 Besoldung     = p.Besoldung,
                 DiscordRoleId = p.DiscordRoleId,
-                UserCount     = countDict.TryGetValue(p.Id, out var c) ? c : 0
+                UserCount     = countDict.GetValueOrDefault(p.Id, 0)
             }).ToList();
 
-            return View(list);
+            // 2. Rechte abfragen
+            ViewData["CanCreate"] = (await _auth.AuthorizeAsync(User, nameof(Permission.Paygrade_Create))).Succeeded;
+            ViewData["CanEdit"]   = (await _auth.AuthorizeAsync(User, nameof(Permission.Paygrade_Edit))).Succeeded;
+            ViewData["CanDelete"] = (await _auth.AuthorizeAsync(User, nameof(Permission.Paygrade_Delete))).Succeeded;
+
+            return View(vmList);
         }
 
-        // GET: /Paygrades/Create
+        // CREATE – GET
+        [Authorize(Policy = nameof(Permission.Paygrade_Create))]
         [HttpGet]
         public IActionResult Create()
             => PartialView("_CreateEdit", new PaygradeViewModel());
 
-        // POST: /Paygrades/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        // CREATE – POST
+        [Authorize(Policy = nameof(Permission.Paygrade_Create))]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PaygradeViewModel model)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var entity = new Paygrade
             {
                 Besoldung     = model.Besoldung,
                 DiscordRoleId = model.DiscordRoleId
             };
+
             _db.Paygrades.Add(entity);
             await _db.SaveChangesAsync();
 
-            // Detailliertes Logging
             await _audit.LogAsync(
-                "Paygrade.Create",
-                $"Besoldungsstufe angelegt: ID={entity.Id}, Besoldung={entity.Besoldung}, DiscordRoleId='{entity.DiscordRoleId}'"
+                "Paygrade.Created",
+                $"Paygrade angelegt: ID={entity.Id}, Besoldung={entity.Besoldung}, DiscordRoleId='{entity.DiscordRoleId}'"
             );
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: /Paygrades/Edit/5
+        // EDIT – GET
+        [Authorize(Policy = nameof(Permission.Paygrade_Edit))]
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
             var p = await _db.Paygrades.FindAsync(id);
-            if (p == null) return NotFound();
+            if (p == null) 
+                return NotFound();
 
             var vm = new PaygradeViewModel
             {
@@ -96,18 +109,20 @@ namespace statenet_lspd.Controllers
             return PartialView("_CreateEdit", vm);
         }
 
-        // POST: /Paygrades/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        // EDIT – POST
+        [Authorize(Policy = nameof(Permission.Paygrade_Edit))]
+        [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(PaygradeViewModel model)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var entity = await _db.Paygrades.FindAsync(model.Id);
-            if (entity == null) return NotFound();
+            if (entity == null) 
+                return NotFound();
 
             var changes = new List<string>();
-            if (entity.Besoldung != model.Besoldung)
+            if (entity.Besoldung     != model.Besoldung)
                 changes.Add($"Besoldung: {entity.Besoldung}→{model.Besoldung}");
             if (entity.DiscordRoleId != model.DiscordRoleId)
                 changes.Add($"DiscordRoleId: '{entity.DiscordRoleId}'→'{model.DiscordRoleId}'");
@@ -120,31 +135,32 @@ namespace statenet_lspd.Controllers
             if (changes.Any())
             {
                 await _audit.LogAsync(
-                    "Paygrade.Update",
-                    $"Besoldungsstufe aktualisiert: ID={entity.Id}, " + string.Join(", ", changes)
+                    "Paygrade.Updated",
+                    $"Paygrade aktualisiert: ID={entity.Id}, {string.Join(", ", changes)}"
                 );
             }
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
 
-        // POST: /Paygrades/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
+        // DELETE – POST
+        [Authorize(Policy = nameof(Permission.Paygrade_Delete))]
+        [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var entity = await _db.Paygrades.FindAsync(id);
-            if (entity == null) return NotFound();
+            if (entity == null) 
+                return NotFound();
 
             _db.Paygrades.Remove(entity);
             await _db.SaveChangesAsync();
 
             await _audit.LogAsync(
-                "Paygrade.Delete",
-                $"Besoldungsstufe gelöscht: ID={entity.Id}, Besoldung={entity.Besoldung}, DiscordRoleId='{entity.DiscordRoleId}'"
+                "Paygrade.Deleted",
+                $"Paygrade gelöscht: ID={entity.Id}, Besoldung={entity.Besoldung}, DiscordRoleId='{entity.DiscordRoleId}'"
             );
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
     }
 }

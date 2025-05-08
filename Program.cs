@@ -82,38 +82,16 @@ builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 // Policies mit PermissionRequirement definieren
 builder.Services.AddAuthorization(options =>
 {
-    // HR-Berechtigungen
-    options.AddPolicy("HR.View", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.HR_View)));    
-    options.AddPolicy("HR.Create", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.HR_Create)));
-    options.AddPolicy("HR.Delete", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.HR_Delete)));
-    options.AddPolicy("HR.Sanction", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.HR_Sanction)));
-    options.AddPolicy("HR.Promotion", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.HR_Promotion)));
-    options.AddPolicy("HR.Demotion", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.HR_Demotion)));
-    options.AddPolicy("HR.Suspension", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.HR_Suspension)));
-
-    // Rollenverwaltung (RolesController)
-    options.AddPolicy("Roles.View", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.ROLE_View)));
-    options.AddPolicy("Roles.Create", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.ROLE_Add)));
-    options.AddPolicy("Roles.Edit", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.ROLE_Edit)));
-    options.AddPolicy("Roles.Delete", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.ROLE_Delete)));
-
-    // Rollenberechtigungen (RolePermissionsController)
-    options.AddPolicy("RolesPerm.View", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.RolesPerm_View)));
-    options.AddPolicy("RolesPerm.Update", policy =>
-        policy.AddRequirements(new PermissionRequirement(Permission.RolesPerm_Update)));
+    foreach (Permission perm in Enum.GetValues(typeof(Permission)))
+    {
+        // Policy-Name = Enum-Name, Requirement = entsprechendes Permission
+        options.AddPolicy(
+            perm.ToString(),
+            policy => policy.AddRequirements(new PermissionRequirement(perm))
+        );
+    }
 });
+
 
 var app = builder.Build();
 

@@ -1,6 +1,15 @@
+@addTagHelper *, Microsoft.AspNetCore.Authorization.TagHelpers
 @model IEnumerable<statenet_lspd.Models.ServiceInstruction>
+@using Microsoft.AspNetCore.Authorization  @* Für IAuthorizationService *@
+@inject IAuthorizationService AuthorizationService
 @{
     ViewData["Title"] = "Dienstanweisungen verwalten";
+    // DEBUG: Berechtigungen prüfen
+    var canCreate     = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Instructions_Add))).Succeeded;
+    var canDetails    = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Instructions_View))).Succeeded;
+    var canEdit       = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Instructions_Edit))).Succeeded;
+    var canDeactivate = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Instructions_Delete))).Succeeded;
+    var canDelete     = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Instructions_Delete))).Succeeded;
 }
 
 <div class="max-w-7xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -14,10 +23,13 @@
                 Übersicht aller aktiven und inaktiven Dienstanweisungen
             </p>
         </div>
-        <a asp-action="Create"
-           class="mt-4 sm:mt-0 inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow text-sm font-medium transition">
-            <i class="fa-solid fa-plus mr-2"></i> Neue Anweisung
-        </a>
+        @if (canCreate)
+        {
+            <a asp-action="Create"
+               class="mt-4 sm:mt-0 inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow text-sm font-medium transition">
+                <i class="fa-solid fa-plus mr-2"></i> Neue Anweisung
+            </a>
+        }
     </div>
 
     <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
@@ -39,41 +51,50 @@
                     <td class="px-4 py-3">
                         @if (instr.IsActive)
                         {
-                            <span class="px-2 py-1 bg-green-600 text-white rounded-full text-xs font-semibold">
-                                Aktiv
-                            </span>
+                            <span class="px-2 py-1 bg-green-600 text-white rounded-full text-xs font-semibold">Aktiv</span>
                         }
                         else
                         {
-                            <span class="px-2 py-1 bg-red-600 text-white rounded-full text-xs font-semibold">
-                                Inaktiv
-                            </span>
+                            <span class="px-2 py-1 bg-red-600 text-white rounded-full text-xs font-semibold">Inaktiv</span>
                         }
                     </td>
                     <td class="px-4 py-3 text-right space-x-2">
-                        <a asp-action="Details" asp-route-id="@instr.Id"
-                           class="text-blue-600 hover:underline">
-                            <i class="fa-solid fa-eye mr-1"></i>Details
-                        </a>
-                        <a asp-action="Edit" asp-route-id="@instr.Id"
-                           class="text-indigo-600 hover:underline">
-                            <i class="fa-solid fa-pen-to-square mr-1"></i>Bearbeiten
-                        </a>
+                        @* Details *@
+                        @if (canDetails)
+                        {
+                            <a asp-action="Details" asp-route-id="@instr.Id" class="text-blue-600 hover:underline">
+                                <i class="fa-solid fa-eye mr-1"></i>Details
+                            </a>
+                        }
+                        @* Bearbeiten *@
+                        @if (canEdit)
+                        {
+                            <a asp-action="Edit" asp-route-id="@instr.Id" class="text-indigo-600 hover:underline">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i>Bearbeiten
+                            </a>
+                        }
+                        @* Deaktivieren bzw. Löschen *@
                         @if (instr.IsActive)
                         {
-                            <form asp-action="Deactivate" asp-route-id="@instr.Id" method="post" class="inline">
-                                <button type="submit" class="text-yellow-600 hover:underline">
-                                    <i class="fa-solid fa-ban mr-1"></i>Deaktivieren
-                                </button>
-                            </form>
+                            @if (canDeactivate)
+                            {
+                                <form asp-action="Deactivate" asp-route-id="@instr.Id" method="post" class="inline">
+                                    <button type="submit" class="text-yellow-600 hover:underline">
+                                        <i class="fa-solid fa-ban mr-1"></i>Deaktivieren
+                                    </button>
+                                </form>
+                            }
                         }
                         else
                         {
-                            <form asp-action="Delete" asp-route-id="@instr.Id" method="post" class="inline">
-                                <button type="submit" class="text-red-600 hover:underline">
-                                    <i class="fa-solid fa-trash mr-1"></i>Löschen
-                                </button>
-                            </form>
+                            @if (canDelete)
+                            {
+                                <form asp-action="Delete" asp-route-id="@instr.Id" method="post" class="inline">
+                                    <button type="submit" class="text-red-600 hover:underline">
+                                        <i class="fa-solid fa-trash mr-1"></i>Löschen
+                                    </button>
+                                </form>
+                            }
                         }
                     </td>
                 </tr>

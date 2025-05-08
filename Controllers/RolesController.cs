@@ -7,7 +7,7 @@ using statenet_lspd.Data;
 
 namespace statenet_lspd.Controllers
 {
-    [Authorize(Policy = "Roles.View")]
+    [Authorize(Policy = nameof(Permission.ROLE_View))]
     public class RolesController : Controller
     {
         private readonly RoleManager<ApplicationRole> _roleManager;
@@ -42,7 +42,7 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: Create Role Modal
-        [Authorize(Policy = "Roles.Create")]
+        [Authorize(Policy = nameof(Permission.ROLE_Add))]
         [HttpGet]
         public IActionResult Create()
         {
@@ -50,7 +50,7 @@ namespace statenet_lspd.Controllers
         }
 
         // POST: Create Role
-        [Authorize(Policy = "Roles.Create")]
+        [Authorize(Policy = nameof(Permission.ROLE_Add))]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ApplicationRole model)
@@ -72,7 +72,7 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: Edit Role Modal
-        [Authorize(Policy = "Roles.Edit")]
+        [Authorize(Policy = nameof(Permission.ROLE_Edit))]
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
@@ -82,7 +82,7 @@ namespace statenet_lspd.Controllers
         }
 
         // POST: Edit Role
-        [Authorize(Policy = "Roles.Edit")]
+        [Authorize(Policy = nameof(Permission.ROLE_Edit))]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ApplicationRole model)
@@ -111,7 +111,7 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: Delete Role Modal
-        [Authorize(Policy = "Roles.Delete")]
+        [Authorize(Policy = nameof(Permission.ROLE_Delete))]
         [HttpGet]
         public async Task<IActionResult> Delete(string id)
         {
@@ -124,7 +124,7 @@ namespace statenet_lspd.Controllers
         }
 
         // POST: Delete Role
-        [Authorize(Policy = "Roles.Delete")]
+        [Authorize(Policy = nameof(Permission.ROLE_Delete))]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(string id)

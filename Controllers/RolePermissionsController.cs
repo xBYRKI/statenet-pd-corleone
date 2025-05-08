@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace statenet_lspd.Controllers
 {
-    [Authorize(Policy = "RolesPerm.View")]
+    [Authorize(Policy = nameof(Permission.RolesPerm_View))]
     public class RolePermissionsController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -23,7 +23,7 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: /RolePermissions
-        [Authorize(Policy = "RolesPerm.View")]
+        [Authorize(Policy = nameof(Permission.RolesPerm_View))]
         public async Task<IActionResult> Index()
         {
             var roles = await _roleManager.Roles
@@ -36,7 +36,7 @@ namespace statenet_lspd.Controllers
 
         // POST: /RolePermissions/Update
         [HttpPost, ValidateAntiForgeryToken]
-        [Authorize(Policy = "RolesPerm.Update")]
+        [Authorize(Policy = nameof(Permission.RolesPerm_Update))]
         public async Task<IActionResult> Update(string roleId, Permission[] selected, string group)
         {
             var role = await _roleManager.FindByIdAsync(roleId);

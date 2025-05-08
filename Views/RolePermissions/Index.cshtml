@@ -56,21 +56,27 @@
                     {
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <form asp-action="Update" method="post" class="w-full flex items-center">
+                                @Html.AntiForgeryToken()
                                 <input type="hidden" name="roleId" value="@role.Id" />
+                                <input type="hidden" name="group"  value="@permGroup.Key" />
+
+                                @* Rolle als erste Spalte *@
                                 <td class="px-4 py-2 flex-1 font-medium text-gray-800 dark:text-gray-200">
                                     @role.Name
                                 </td>
+
                                 @foreach (var perm in permGroup)
                                 {
                                     var has = role.RolePermissions.Any(rp => rp.Permission == perm);
                                     <td class="px-4 py-2 text-center">
                                         <input type="checkbox"
-                                               name="selected"
-                                               value="@perm.ToString()" 
-                                               @(has ? "checked" : "")
-                                               class="form-checkbox h-4 w-4 text-indigo-600" />
+                                            name="selected"
+                                            value="@perm"
+                                            @(has ? "checked" : "")
+                                            class="form-checkbox h-4 w-4 text-indigo-600" />
                                     </td>
                                 }
+
                                 <td class="px-4 py-2">
                                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded shadow">
                                         Speichern
@@ -79,6 +85,7 @@
                             </form>
                         </tr>
                     }
+
                 </tbody>
             </table>
         </div>
