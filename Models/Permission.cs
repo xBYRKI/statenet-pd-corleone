@@ -27,7 +27,7 @@ namespace statenet_lspd.Models
         [Display(Name = "Suspendieren")]
         HR_Suspension,
 
-        [Display(Name = "Rollen anzeigen")]
+        [Display(Name = "Rollenübersicht anzeigen")]
         ROLE_View,
 
         [Display(Name = "Rolle hinzufügen")]
@@ -38,6 +38,12 @@ namespace statenet_lspd.Models
 
         [Display(Name = "Rolle löschen")]
         ROLE_Delete,
+
+        [Display(Name = "Rollenberechtigung sehen")]
+        RolesPerm_View,
+
+        [Display(Name = "Rollenberechtigung bearbeiten")]
+        RolesPerm_Update,
         // weitere Permissions...
     }
 

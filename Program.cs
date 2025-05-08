@@ -1,20 +1,26 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
-using statenet_lspd.Models;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using AspNet.Security.OAuth.Discord;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using Microsoft.AspNetCore.Authorization;
 using statenet_lspd.Data;
-using System.Threading.Tasks;
+using statenet_lspd.Models;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Serilog-Konfiguration mit Console-Sink
+// Serilog-Konfiguration
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console() // Aktiviert Konsolen-Logging
-    // hier kannst du weitere Sinks hinzufügen (Datei, Seq, etc.)
+    .MinimumLevel.Debug()
+    .MinimumLevel.Override("Microsoft.AspNetCore.Authorization", Serilog.Events.LogEventLevel.Debug)
+    .WriteTo.Console()
     .CreateLogger();
 builder.Host.UseSerilog();
 
@@ -34,8 +40,7 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
     options.User.RequireUniqueEmail = false;
-    // Optional: weiter Password-Optionen, z.B.
-    // options.Password.RequireNonAlphanumeric = false;
+    // weitere Password-Optionen bei Bedarf
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
@@ -67,87 +72,57 @@ builder.Services.AddAuthentication(options =>
     options.Scope.Add("guilds");
 });
 
+// MVC + Razor
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-// Authorization Policies based on Permissions
+// Custom AuthorizationHandler registrieren
+builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+
+// Policies mit PermissionRequirement definieren
 builder.Services.AddAuthorization(options =>
 {
+    // HR-Berechtigungen
     options.AddPolicy("HR.View", policy =>
-        policy.RequireClaim("Permission", Permission.HR_View.ToString()));
+        policy.AddRequirements(new PermissionRequirement(Permission.HR_View)));    
     options.AddPolicy("HR.Create", policy =>
-        policy.RequireClaim("Permission", Permission.HR_Create.ToString()));
+        policy.AddRequirements(new PermissionRequirement(Permission.HR_Create)));
     options.AddPolicy("HR.Delete", policy =>
-        policy.RequireClaim("Permission", Permission.HR_Delete.ToString()));
+        policy.AddRequirements(new PermissionRequirement(Permission.HR_Delete)));
     options.AddPolicy("HR.Sanction", policy =>
-        policy.RequireClaim("Permission", Permission.HR_Sanction.ToString()));
+        policy.AddRequirements(new PermissionRequirement(Permission.HR_Sanction)));
     options.AddPolicy("HR.Promotion", policy =>
-        policy.RequireClaim("Permission", Permission.HR_Promotion.ToString()));
+        policy.AddRequirements(new PermissionRequirement(Permission.HR_Promotion)));
     options.AddPolicy("HR.Demotion", policy =>
-        policy.RequireClaim("Permission", Permission.HR_Demotion.ToString()));
+        policy.AddRequirements(new PermissionRequirement(Permission.HR_Demotion)));
     options.AddPolicy("HR.Suspension", policy =>
-        policy.RequireClaim("Permission", Permission.HR_Suspension.ToString()));
-    // weitere Policies hinzufügen
+        policy.AddRequirements(new PermissionRequirement(Permission.HR_Suspension)));
+
+    // Rollenverwaltung (RolesController)
+    options.AddPolicy("Roles.View", policy =>
+        policy.AddRequirements(new PermissionRequirement(Permission.ROLE_View)));
+    options.AddPolicy("Roles.Create", policy =>
+        policy.AddRequirements(new PermissionRequirement(Permission.ROLE_Add)));
+    options.AddPolicy("Roles.Edit", policy =>
+        policy.AddRequirements(new PermissionRequirement(Permission.ROLE_Edit)));
+    options.AddPolicy("Roles.Delete", policy =>
+        policy.AddRequirements(new PermissionRequirement(Permission.ROLE_Delete)));
+
+    // Rollenberechtigungen (RolePermissionsController)
+    options.AddPolicy("RolesPerm.View", policy =>
+        policy.AddRequirements(new PermissionRequirement(Permission.RolesPerm_View)));
+    options.AddPolicy("RolesPerm.Update", policy =>
+        policy.AddRequirements(new PermissionRequirement(Permission.RolesPerm_Update)));
 });
 
 var app = builder.Build();
 
-// Migrationen anwenden (stellt sicher, dass die Tabellen existieren)
+// Migrationen anwenden
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 }
-
-// Seed-Methode für Admin-User
-static async Task CreateAdminUserAsync(WebApplication app)
-{
-    using (var scope = app.Services.CreateScope())
-    {
-        var services = scope.ServiceProvider;
-        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-        var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();
-
-        try
-        {
-            Console.WriteLine("Erstelle Admin-User...");
-            var roleName = "Chief of Police";
-            if (!await roleManager.RoleExistsAsync(roleName))
-            {
-                await roleManager.CreateAsync(new ApplicationRole { Name = roleName });
-            }
-
-            var email = "lukas.birkenfeld@lspd.cc";
-            var adminUser = await userManager.FindByEmailAsync(email);
-            if (adminUser == null)
-            {
-                var newAdmin = new ApplicationUser
-                {
-                    UserName = "lukas.birkenfeld",
-                    Email = email,
-                    DiscordId = "196016388630904833"
-                    // Weitere Felder hier setzen
-                };
-
-                var result = await userManager.CreateAsync(newAdmin, "Rosas&&1120");
-                if (result.Succeeded)
-                {
-                    await userManager.AddToRoleAsync(newAdmin, roleName);
-                    Console.WriteLine("Admin-User erfolgreich angelegt.");
-                }
-                else
-                {
-                    Log.Error("Fehler beim Erstellen des Admin-Users: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error("Seed-Prozess fehlgeschlagen: {Message}", ex.Message);
-        }
-    }
-}
-await CreateAdminUserAsync(app);
 
 // Middleware-Pipeline
 if (app.Environment.IsDevelopment())
@@ -176,24 +151,25 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Public controllers allow anonymous
+// Public controllers
 app.MapControllerRoute(
     name: "public",
     pattern: "Public/{action=Index}/{id?}",
     defaults: new { controller = "Public", action = "Index" }
 ).WithMetadata(new AllowAnonymousAttribute());
 
-// Account external login
+// Account (Login / AccessDenied)
 app.MapControllerRoute(
     name: "login",
     pattern: "Account/{action=ExternalLogin}/{returnUrl?}",
     defaults: new { controller = "Account", action = "ExternalLogin" }
 ).WithMetadata(new AllowAnonymousAttribute());
 
+// Default route – hier greifen deine Policies
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}"
-).WithMetadata(new AllowAnonymousAttribute());
+);
 
 app.MapRazorPages();
 
