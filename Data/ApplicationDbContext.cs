@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using statenet_lspd.Models;
 
 namespace statenet_lspd.Data
 {
     public class ApplicationDbContext 
-        : IdentityDbContext<ApplicationUser, ApplicationRole, string>
+        : IdentityDbContext<ApplicationUser, ApplicationRole, string,
+                             IdentityUserClaim<string>, IdentityUserRole<string>, IdentityUserLogin<string>,
+                             IdentityRoleClaim<string>, IdentityUserToken<string>>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options) { }
@@ -24,66 +27,156 @@ namespace statenet_lspd.Data
         public DbSet<MenuItemRole> MenuItemRoles { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
 
+        public DbSet<Unit> Units { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // Sanktion index
-            builder.Entity<Sanktion>().HasIndex(s => s.Kategorie);
+            //
+            // Identity-Tabellen (optional, falls du andere Namen möchtest)
+            //
 
-            // Duty enum conversion
+            //
+            // ErrorLog & AuditLog
+            //
+            builder.Entity<ErrorLog>().ToTable("ErrorLogs");
+            builder.Entity<AuditLog>().ToTable("AuditLogs");
+
+            //
+            // Sanktion
+            //
+            builder.Entity<Sanktion>()
+                   .ToTable("Sanktionen")
+                   .HasIndex(s => s.Kategorie);
+
+            //
+            // Duty (Enum-Conversion)
+            //
             builder.Entity<Duty>()
-                .Property(d => d.Status)
-                .HasConversion<string>()
-                .HasColumnType("enum('IN_SERVICE','OUT_OF_SERVICE','PENDING','CANCELLED')");
+                   .ToTable("Duties")
+                   .Property(d => d.Status)
+                   .HasConversion<string>()
+                   .HasColumnType("enum('IN_SERVICE','OUT_OF_SERVICE','PENDING','CANCELLED')");
 
-            // HRAction mapping
-            builder.Entity<HRAction>()
-                .HasOne(a => a.User)
-                .WithMany(u => u.HRActions)
-                .HasForeignKey(a => a.UserId);
-
-            // Rank configuration
+            //
+            // Rank
+            //
             builder.Entity<Rank>(entity =>
             {
+                entity.ToTable("Ranks");
                 entity.HasKey(r => r.Id);
-                entity.Property(r => r.Name).IsRequired().HasMaxLength(100);
-                entity.Property(r => r.SortOrder).HasDefaultValue(0);
-                entity.Property(r => r.DiscordRoleId).HasMaxLength(50);
-                entity.Property(r => r.ColorHex).IsRequired().HasMaxLength(7).HasDefaultValue("#FFFFFF");
+                entity.Property(r => r.Name)
+                      .IsRequired()
+                      .HasMaxLength(100);
+                entity.Property(r => r.SortOrder)
+                      .HasDefaultValue(0);
+                entity.Property(r => r.DiscordRoleId)
+                      .HasMaxLength(50);
+                entity.Property(r => r.ColorHex)
+                      .IsRequired()
+                      .HasMaxLength(7)
+                      .HasDefaultValue("#FFFFFF");
             });
 
-            // MenuItem <-> Role many-to-many
-            builder.Entity<MenuItemRole>()
-                .HasKey(mr => new { mr.MenuItemId, mr.RoleId });
-            builder.Entity<MenuItemRole>()
-                .HasOne(mr => mr.MenuItem)
-                .WithMany(m => m.MenuItemRoles)
-                .HasForeignKey(mr => mr.MenuItemId);
-            builder.Entity<MenuItemRole>()
-                .HasOne(mr => mr.Role)
-                .WithMany(r => r.MenuItemRoles)
-                .HasForeignKey(mr => mr.RoleId);
+            //
+            // Paygrade, ServiceInstruction, UserInstructionAcceptance
+            // (Default-Mapping, bei Bedarf ergänzen)
+            //
+            builder.Entity<Paygrade>().ToTable("Paygrades");
+            builder.Entity<ServiceInstruction>().ToTable("ServiceInstructions");
+            builder.Entity<UserInstructionAcceptance>().ToTable("UserInstructionAcceptances");
 
-            // MenuItem configuration
+            //
+            // HRAction
+            //
+            builder.Entity<HRAction>(entity =>
+            {
+                entity.ToTable("HRActions");
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.ActionType)
+                      .HasConversion<string>()
+                      .HasColumnType("enum('Hire','Termination','Sanction','Promotion','Demotion','Suspension')");
+                entity.HasOne(a => a.User)
+                      .WithMany(u => u.HRActions)
+                      .HasForeignKey(a => a.UserId);
+            });
+
+            //
+            // Unit
+            //
+            builder.Entity<Unit>(entity =>
+            {
+                entity.ToTable("Units");
+                entity.HasKey(u => u.Id);
+                entity.Property(u => u.Name)
+                      .IsRequired()
+                      .HasMaxLength(100);
+                entity.Property(u => u.Description)
+                      .HasMaxLength(500);
+
+                // Many-to-Many User ↔ Unit
+                entity.HasMany(u => u.Users)
+                      .WithMany(u => u.Units)
+                      .UsingEntity<Dictionary<string, object>>(
+                          "UserUnit",
+                          r => r.HasOne<ApplicationUser>()
+                                .WithMany()
+                                .HasForeignKey("UserId"),
+                          l => l.HasOne<Unit>()
+                                .WithMany()
+                                .HasForeignKey("UnitId"),
+                          je =>
+                          {
+                              je.ToTable("UserUnits");
+                              je.HasKey("UserId", "UnitId");
+                          });
+            });
+
+            //
+            // MenuItem & MenuItemRole
+            //
             builder.Entity<MenuItem>(entity =>
             {
+                entity.ToTable("MenuItems");
                 entity.HasKey(m => m.Id);
-                entity.Property(m => m.Title).IsRequired().HasMaxLength(200);
-                entity.Property(m => m.Order).HasDefaultValue(0);
+                entity.Property(m => m.Title)
+                      .IsRequired()
+                      .HasMaxLength(200);
+                entity.Property(m => m.Order)
+                      .HasDefaultValue(0);
                 entity.HasOne(m => m.Parent)
                       .WithMany(p => p.Children)
                       .HasForeignKey(m => m.ParentId)
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // RolePermission composite key
-            builder.Entity<RolePermission>()
-                .HasKey(rp => new { rp.RoleId, rp.Permission });
-            builder.Entity<RolePermission>()
-                .HasOne(rp => rp.Role)
-                .WithMany(r => r.RolePermissions)
-                .HasForeignKey(rp => rp.RoleId);
+            builder.Entity<MenuItemRole>(entity =>
+            {
+                entity.ToTable("MenuItemRoles");
+                entity.HasKey(mr => new { mr.MenuItemId, mr.RoleId });
+                entity.HasOne(mr => mr.MenuItem)
+                      .WithMany(m => m.MenuItemRoles)
+                      .HasForeignKey(mr => mr.MenuItemId);
+                entity.HasOne(mr => mr.Role)
+                      .WithMany(r => r.MenuItemRoles)
+                      .HasForeignKey(mr => mr.RoleId);
+            });
+
+            //
+            // RolePermission
+            //
+            builder.Entity<RolePermission>(entity =>
+            {
+                entity.ToTable("RolePermissions");
+                entity.HasKey(rp => new { rp.RoleId, rp.Permission });
+                entity.Property(rp => rp.Permission)
+                      .HasConversion<string>()
+                      .HasMaxLength(50);
+                entity.HasOne(rp => rp.Role)
+                      .WithMany(r => r.RolePermissions)
+                      .HasForeignKey(rp => rp.RoleId);
+            });
         }
     }
 }

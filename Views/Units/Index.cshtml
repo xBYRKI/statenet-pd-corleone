@@ -1,32 +1,32 @@
 @addTagHelper *, Microsoft.AspNetCore.Authorization.TagHelpers
-@model IEnumerable<statenet_lspd.ViewModels.RankViewModel>
-    @using statenet_lspd.Helpers
+@model IEnumerable<statenet_lspd.ViewModels.UnitViewModel>
+@using statenet_lspd.Helpers
 @using Microsoft.AspNetCore.Authorization  @* für IAuthorizationService *@
-@inject Microsoft.AspNetCore.Authorization.IAuthorizationService AuthorizationService
+@inject IAuthorizationService AuthorizationService
 @{
-    ViewData["Title"] = "Rangverwaltung";
-    var sortField = (string?)ViewBag.SortField ?? "SortOrder";
+    ViewData["Title"] = "Unitverwaltung";
+    var sortField = (string?)ViewBag.SortField ?? "Name";
     var sortDir   = (string?)ViewBag.SortDir   ?? "asc";
     var page      = (int?)ViewBag.PageNumber   ?? 1;
     var total     = (int?)ViewBag.TotalPages   ?? 1;
 }
 
 @{
-    var canCreate = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Rang_Add))).Succeeded;
-    var canEdit   = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Rang_Edit))).Succeeded;
-    var canDelete = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Rang_Delete))).Succeeded;
+    var canCreate = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Unit_Add))).Succeeded;
+    var canEdit   = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Unit_Edit))).Succeeded;
+    var canDelete = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.Unit_Delete))).Succeeded;
 }
 
 <div class="max-w-7xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <i class="fa-solid fa-layer-group text-purple-600"></i> Ränge
+            <i class="fa-solid fa-sitemap text-purple-600"></i> Units
         </h1>
         @if (canCreate)
         {
-            <button onclick="openCreateRankModal()"
+            <button onclick="openCreateUnitModal()"
                     class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm">
-                <i class="fa-solid fa-plus mr-2"></i> Neuer Rang
+                <i class="fa-solid fa-plus mr-2"></i> Neue Unit
             </button>
         }
     </div>
@@ -44,53 +44,42 @@
                             }
                         </a>
                     </th>
-                    <th class="px-4 py-3 text-left">
-                        <a href="?sortField=SortOrder&sortDir=@(sortField=="SortOrder" && sortDir=="asc" ? "desc" : "asc")"
-                           class="flex items-center gap-1">
-                            Sortierung
-                            @if (sortField=="SortOrder") {
-                                <i class="fa-solid @(sortDir=="asc"?"fa-arrow-up":"fa-arrow-down") text-xs"></i>
-                            }
-                        </a>
-                    </th>
-                    <th class="px-4 py-3 text-left">Discord‑ID</th>
-                    <th class="px-4 py-3 text-left">Farbe</th>
-                    <th class="px-4 py-3 text-left">Mindest-Besoldung</th>
-                    <th class="px-4 py-3 text-left">Maximal-Besoldung</th>
-                    <th class="px-4 py-3 text-left">Officer im Rang</th>
+                    <th class="px-4 py-3 text-left">Beschreibung</th>
+                    <th class="px-4 py-3 text-left">Mitglieder</th>
                     <th class="px-4 py-3 text-right">Aktionen</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                @foreach (var rank in Model)
+                @foreach (var unit in Model)
                 {
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                        <td class="px-4 py-3">@rank.Name</td>
-                        <td class="px-4 py-3">@rank.SortOrder</td>
-                        <td class="px-4 py-3">@rank.DiscordRoleId</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-block px-3 py-1 rounded text-xs font-semibold shadow"
-                                  style="background-color:@rank.ColorHex; color:@ColorUtils.GetContrastingTextColor(rank.ColorHex)">
-                                @rank.ColorHex
-                            </span>
-                        </td>
-                        <td class="px-4 py-3">@rank.MinPayGrade</td>
-                        <td class="px-4 py-3">@rank.MaxPayGrade</td>
-                        <td class="px-4 py-3">@rank.UserCount</td>
+                        <td class="px-4 py-3">@unit.Name</td>
+                        <td class="px-4 py-3">@unit.Description</td>
+                        <td class="px-4 py-3">@unit.UserCount</td>
                         <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
                             @if (canEdit)
                             {
-                                <button onclick="openEditRankModal(@rank.Id)"
+                                <button onclick="openEditUnitModal(@unit.Id)"
                                         class="text-blue-600 hover:underline">
                                     <i class="fa-solid fa-pen-to-square mr-1"></i> Bearbeiten
                                 </button>
                             }
                             @if (canDelete)
                             {
-                                <button onclick="openDeleteRankModal(@rank.Id)"
-                                        class="text-red-600 hover:underline">
-                                    <i class="fa-solid fa-trash mr-1"></i> Löschen
-                                </button>
+                                if (unit.UserCount > 0)
+                                {
+                                    <button disabled
+                                            class="text-gray-400 cursor-not-allowed">
+                                        <i class="fa-solid fa-trash mr-1"></i> Löschen
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button onclick="openDeleteUnitModal(@unit.Id)"
+                                            class="text-red-600 hover:underline">
+                                        <i class="fa-solid fa-trash mr-1"></i> Löschen
+                                    </button>
+                                }
                             }
                         </td>
                     </tr>
@@ -122,28 +111,28 @@
 
 @section Scripts {
     <script>
-        function openCreateRankModal() {
-            fetch('/Ranks/Create')
+        function openCreateUnitModal() {
+            fetch('/Units/Create')
                 .then(res => res.text())
                 .then(html => {
                     document.getElementById('modalContainer').innerHTML = html;
-                    document.getElementById('createRankModal').classList.remove('hidden');
+                    document.getElementById('createUnitModal').classList.remove('hidden');
                 });
         }
-        function openEditRankModal(id) {
-            fetch(`/Ranks/Edit/${id}`)
+        function openEditUnitModal(id) {
+            fetch(`/Units/Edit/${id}`)
                 .then(res => res.text())
                 .then(html => {
                     document.getElementById('modalContainer').innerHTML = html;
-                    document.getElementById('editRankModal').classList.remove('hidden');
+                    document.getElementById('editUnitModal').classList.remove('hidden');
                 });
         }
-        function openDeleteRankModal(id) {
-            fetch(`/Ranks/Delete/${id}`)
+        function openDeleteUnitModal(id) {
+            fetch(`/Units/Delete/${id}`)
                 .then(res => res.text())
                 .then(html => {
                     document.getElementById('modalContainer').innerHTML = html;
-                    document.getElementById('deleteRankModal').classList.remove('hidden');
+                    document.getElementById('deleteUnitModal').classList.remove('hidden');
                 });
         }
     </script>

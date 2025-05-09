@@ -68,6 +68,30 @@ namespace statenet_lspd.Models
 
         [Display(Name = "Dienstanweisungen löschen")]
         Instructions_Delete,
+
+        [Display(Name = "Rangübersicht sehen")]
+        Rang_View,
+
+        [Display(Name = "Rang erstellen")]
+        Rang_Add,
+
+        [Display(Name = "Rang bearbeiten")]
+        Rang_Edit,
+
+        [Display(Name = "Rang löschen")]
+        Rang_Delete,
+
+         [Display(Name = "Unitverwaltung sehen")]
+        Unit_View,
+
+        [Display(Name = "Unit erstellen")]
+        Unit_Add,
+
+        [Display(Name = "Unit bearbeiten")]
+        Unit_Edit,
+
+        [Display(Name = "Unit löschen")]
+        Unit_Delete,
         // weitere Permissions...
     }
 

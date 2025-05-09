@@ -1,0 +1,133 @@
+@model HireWizardViewModel
+@using statenet_lspd.Models
+
+@{
+    ViewData["Title"] = "Mitarbeiter einstellen";
+    var ranks = (List<Rank>)ViewBag.Ranks;
+    var allPaygrades = (List<int>)ViewBag.AllPaygrades;
+}
+
+<form asp-action="HireWizard" method="post" novalidate>
+    <div class="tabs flex border-b mb-4">
+        <button type="button" data-step="1" class="tab px-4 py-2 bg-green-100">1. Basisdaten</button>
+        <button type="button" data-step="2" class="tab px-4 py-2">2. Rang &amp; Besoldung</button>
+        <button type="button" data-step="3" class="tab px-4 py-2">3. Checkliste</button>
+    </div>
+
+    <div id="step-1" class="step-content">
+        <div class="mb-4">
+            <label asp-for="Step1.FullName"></label>
+            <input asp-for="Step1.FullName" class="w-full p-2 border" />
+            <span asp-validation-for="Step1.FullName" class="text-red-500"></span>
+        </div>
+        <div class="mb-4 flex items-end">
+            <div class="flex-1">
+                <label asp-for="Step1.Dienstnummer"></label>
+                <input asp-for="Step1.Dienstnummer" class="w-full p-2 border" readonly />
+                <span asp-validation-for="Step1.Dienstnummer" class="text-red-500"></span>
+            </div>
+            <button type="button" id="genDn" class="ml-4 px-4 py-2 bg-blue-500 text-white rounded">Generieren</button>
+        </div>
+        <div class="mb-4">
+            <label asp-for="Step1.Birthday"></label>
+            <input asp-for="Step1.Birthday" type="date" class="w-full p-2 border" />
+            <span asp-validation-for="Step1.Birthday" class="text-red-500"></span>
+        </div>
+        <div class="mb-4">
+            <label asp-for="Step1.Phone"></label>
+            <input asp-for="Step1.Phone" class="w-full p-2 border" />
+            <span asp-validation-for="Step1.Phone" class="text-red-500"></span>
+        </div>
+    </div>
+
+    <div id="step-2" class="step-content hidden">
+        <div class="mb-4">
+            <label asp-for="Step2.RankId"></label>
+            <select asp-for="Step2.RankId" class="w-full p-2 border" id="rankSelect">
+                <option value="">-- bitte wählen --</option>
+                @foreach(var r in ranks)
+                {
+                    <option value="@r.Id">@r.Name</option>
+                }
+            </select>
+            <span asp-validation-for="Step2.RankId" class="text-red-500"></span>
+        </div>
+        <div class="mb-4">
+            <label asp-for="Step2.Paygrade"></label>
+            <select asp-for="Step2.Paygrade" class="w-full p-2 border" id="paygradeSelect">
+                <option value="">-- bitte wählen --</option>
+                @foreach(var pg in allPaygrades)
+                {
+                    <option value="@pg">@pg</option>
+                }
+            </select>
+            <span asp-validation-for="Step2.Paygrade" class="text-red-500"></span>
+        </div>
+        <div class="mb-4">
+            <label asp-for="Step2.PaygradeReason"></label>
+            <textarea asp-for="Step2.PaygradeReason" class="w-full p-2 border"></textarea>
+            <span asp-validation-for="Step2.PaygradeReason" class="text-red-500"></span>
+        </div>
+    </div>
+
+    <div id="step-3" class="step-content hidden">
+        <div class="mb-4 flex items-center">
+            <input asp-for="Step3.CopNetDone" type="checkbox" class="mr-2" />
+            <label asp-for="Step3.CopNetDone"></label>
+            <span asp-validation-for="Step3.CopNetDone" class="text-red-500 ml-2"></span>
+        </div>
+        <div class="mb-4 flex items-center">
+            <input asp-for="Step3.InstructionDone" type="checkbox" class="mr-2" />
+            <label asp-for="Step3.InstructionDone"></label>
+            <span asp-validation-for="Step3.InstructionDone" class="text-red-500 ml-2"></span>
+        </div>
+    </div>
+
+    <div class="mt-6 flex justify-between">
+        <button type="button" id="prevBtn" class="px-4 py-2 bg-gray-300" disabled>Zurück</button>
+        <button type="button" id="nextBtn" class="px-4 py-2 bg-green-500 text-white">Weiter</button>
+        <button type="submit" id="finishBtn" class="px-4 py-2 bg-blue-600 text-white hidden">Speichern</button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let currentStep = 1;
+        function showStep(n) {
+            document.querySelectorAll('.step-content').forEach((el,i)=> {
+                el.classList.toggle('hidden', i+1 !== n);
+            });
+            document.getElementById('prevBtn').disabled = n===1;
+            document.getElementById('nextBtn').classList.toggle('hidden', n===3);
+            document.getElementById('finishBtn').classList.toggle('hidden', n!==3);
+            document.querySelectorAll('.tab').forEach((tab,i)=>{
+                tab.classList.toggle('bg-green-100', i+1===n);
+            });
+        }
+        document.getElementById('nextBtn').onclick = ()=> { currentStep++; showStep(currentStep); }
+        document.getElementById('prevBtn').onclick = ()=> { currentStep--; showStep(currentStep); }
+        showStep(1);
+
+        // Dienstnummer generieren
+        document.getElementById('genDn').addEventListener('click', ()=> {
+            fetch('@Url.Action("GenerateDienstnummer")', { method:'POST' })
+                .then(r=>r.json())
+                .then(n=> document.querySelector('[name="Step1.Dienstnummer"]').value = n);
+        });
+
+        // Optionale Client-seitige Filterung: Paygrade nur im Range des gewählten Rangs
+        const rankData = @Html.Raw(Json.Serialize(ranks.Select(r=>new{r.Id,r.MinPayGrade,r.MaxPayGrade})));
+        document.getElementById('rankSelect').addEventListener('change', e=>{
+            const sel = +e.target.value;
+            const cfg = rankData.find(r=>r.Id===sel);
+            const pgSel = document.getElementById('paygradeSelect');
+            pgSel.querySelectorAll('option').forEach(opt=>{
+                const val=+opt.value;
+                if (!val) return; // Überschrift
+                const ok = cfg && val>=cfg.MinPayGrade && val<=cfg.MaxPayGrade;
+                opt.disabled = !ok;
+            });
+        });
+    </script>
+}

@@ -236,5 +236,84 @@ namespace statenet_lspd.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+            [Authorize(Policy = nameof(Permission.HR_Create))]
+        public async Task<IActionResult> HireWizard()
+        {
+            var vm = new HireWizardViewModel();
+            ViewBag.Ranks = await _db.Ranks.OrderBy(r => r.SortOrder).ToListAsync();
+            ViewBag.AllPaygrades = Enumerable.Range(1, 20).ToList();
+            return View(vm);
+        }
+
+        // AJAX: Generate unique Dienstnummer
+        [Authorize(Policy = nameof(Permission.HR_Create))]
+        [HttpPost]
+        public async Task<IActionResult> GenerateDienstnummer()
+        {
+            var rand = new Random();
+            int num;
+            do
+            {
+                num = rand.Next(1000, 10000);
+            } while (await _db.Users.AnyAsync(u => u.Dienstnummer == num));
+            return Json(num);
+        }
+
+        // POST: HR/HireWizard
+        [Authorize(Policy = nameof(Permission.HR_Create))]
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> HireWizard(HireWizardViewModel vm)
+        {
+            ViewBag.Ranks = await _db.Ranks.OrderBy(r => r.SortOrder).ToListAsync();
+            ViewBag.AllPaygrades = Enumerable.Range(1, 20).ToList();
+
+            if (!ModelState.IsValid)
+                return View(vm);
+
+            var rank = await _db.Ranks.FindAsync(vm.Step2.RankId);
+            if (vm.Step2.Paygrade < rank.MinPayGrade || vm.Step2.Paygrade > rank.MaxPayGrade)
+            {
+                ModelState.AddModelError(nameof(vm.Step2.Paygrade),
+                    $"Die Besoldung muss zwischen {rank.MinPayGrade} und {rank.MaxPayGrade} liegen.");
+                return View(vm);
+            }
+            if (vm.Step2.Paygrade > rank.MaxPayGrade && string.IsNullOrWhiteSpace(vm.Step2.PaygradeReason))
+            {
+                ModelState.AddModelError(nameof(vm.Step2.PaygradeReason),
+                    "Bitte gib einen Grund an, wenn die Besoldung über der Maximalbesoldung liegt.");
+                return View(vm);
+            }
+
+            var user = new ApplicationUser
+            {
+                Displayname = vm.Step1.FullName,
+                Dienstnummer = vm.Step1.Dienstnummer!.Value,
+                Birthday = vm.Step1.Birthday,
+                Phone = vm.Step1.Phone,
+                RankId = vm.Step2.RankId,
+                Besoldung = vm.Step2.Paygrade.Value,
+                Status = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            var result = await _userManager.CreateAsync(user);
+            if (!result.Succeeded)
+            {
+                foreach (var err in result.Errors)
+                    ModelState.AddModelError("", err.Description);
+                return View(vm);
+            }
+
+            _db.HRActions.Add(new HRAction
+            {
+                ActionType = HRActionType.Hire,
+                EffectiveDate = DateTime.Today,
+                UserId = user.Id
+            });
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
+        }
     }
+
 }

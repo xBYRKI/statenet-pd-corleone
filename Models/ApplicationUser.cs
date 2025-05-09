@@ -69,5 +69,7 @@ namespace statenet_lspd.Models
         public virtual ICollection<IdentityUserRole<string>> UserRoles { get; set; } = new List<IdentityUserRole<string>>();
 
         public virtual ICollection<HRAction> HRActions { get; set; }
+
+         public ICollection<Unit> Units { get; set; } = new List<Unit>();
     }
 }

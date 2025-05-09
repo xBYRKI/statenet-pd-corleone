@@ -11,7 +11,7 @@ using statenet_lspd.Data;
 
 namespace statenet_lspd.Controllers
 {
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Policy = nameof(Permission.Rang_View))]
     public class RanksController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -25,6 +25,7 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: /Ranks
+        [Authorize(Policy = nameof(Permission.Rang_View))]
         [HttpGet]
         public async Task<IActionResult> Index(string? sortField, string? sortDir, int page = 1)
         {
@@ -76,10 +77,12 @@ namespace statenet_lspd.Controllers
 
         // GET: /Ranks/Create
         [HttpGet]
+        [Authorize(Policy = nameof(Permission.Rang_Add))]        
         public IActionResult Create()
             => PartialView("_CreateEdit", new RankViewModel());
 
         // POST: /Ranks/Create
+        [Authorize(Policy = nameof(Permission.Rang_Add))]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(RankViewModel model)
@@ -101,6 +104,7 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: /Ranks/Edit/5
+        [Authorize(Policy = nameof(Permission.Rang_Edit))]
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -120,6 +124,7 @@ namespace statenet_lspd.Controllers
         }
 
         // POST: /Ranks/Edit/5
+        [Authorize(Policy = nameof(Permission.Rang_Edit))]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(RankViewModel model)
@@ -154,6 +159,7 @@ namespace statenet_lspd.Controllers
         }
 
         // GET: /Ranks/Delete/5
+        [Authorize(Policy = nameof(Permission.Rang_Delete))]
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
         {
@@ -166,6 +172,7 @@ namespace statenet_lspd.Controllers
         }
 
         // POST: /Ranks/Delete/5
+        [Authorize(Policy = nameof(Permission.Rang_Delete))]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeletePost(int id)

@@ -1,43 +1,32 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace statenet_lspd.Models
 {
-    public enum HRActionType
-    {
-        Hire,
-        Termination,
-        Sanction,
-        Promotion,
-        Demotion,
-        Suspension
-    }
-
+    [Table("hr_actions")]
     public class HRAction
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
-
-        [Required]
-        public string UserId { get; set; }
-        // Fully qualified to ensure resolution
-        public virtual statenet_lspd.Models.ApplicationUser User { get; set; }
+        [Key]
+        public int Id { get; set; }
 
         [Required]
         public HRActionType ActionType { get; set; }
 
         [Required]
+        [DataType(DataType.Date)]
         public DateTime EffectiveDate { get; set; }
 
-        // Optional fields for specific actions
-        public decimal? Amount { get; set; }
-        public string Reason { get; set; }
+        [Required]
+        public string UserId { get; set; }
 
-        public string OldRank { get; set; }
-        public string NewRank { get; set; }
+        [ForeignKey(nameof(UserId))]
+        public ApplicationUser User { get; set; }
 
-        public decimal? OldSalary { get; set; }
-        public decimal? NewSalary { get; set; }
+        [Display(Name = "Grund / Bemerkung")]
+        public string? Reason { get; set; }
 
-        public string Notes { get; set; }
+        [Display(Name = "Erstellt am")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

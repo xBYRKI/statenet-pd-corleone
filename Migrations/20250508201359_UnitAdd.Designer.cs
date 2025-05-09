@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using statenet_lspd.Data;
 
@@ -11,9 +12,11 @@ using statenet_lspd.Data;
 namespace statenet_lspd.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250508201359_UnitAdd")]
+    partial class UnitAdd
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -53,7 +56,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ErrorLogs", (string)null);
+                    b.ToTable("ErrorLogs");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -174,17 +177,17 @@ namespace statenet_lspd.Migrations
 
             modelBuilder.Entity("UserUnit", b =>
                 {
-                    b.Property<string>("UserId")
-                        .HasColumnType("varchar(255)");
-
                     b.Property<int>("UnitId")
                         .HasColumnType("int");
 
-                    b.HasKey("UserId", "UnitId");
+                    b.Property<string>("UserId")
+                        .HasColumnType("varchar(255)");
 
-                    b.HasIndex("UnitId");
+                    b.HasKey("UnitId", "UserId");
 
-                    b.ToTable("UserUnits", (string)null);
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserUnit");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.ApplicationRole", b =>
@@ -372,7 +375,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AuditLogs", (string)null);
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.Duty", b =>
@@ -406,28 +409,44 @@ namespace statenet_lspd.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Duties", (string)null);
+                    b.ToTable("Duties");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.HRAction", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("ActionType")
                         .HasColumnType("int");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ActionType")
-                        .IsRequired()
-                        .HasColumnType("enum('Hire','Termination','Sanction','Promotion','Demotion','Suspension')");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                    b.Property<decimal?>("Amount")
+                        .HasColumnType("decimal(65,30)");
 
                     b.Property<DateTime>("EffectiveDate")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("NewRank")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<decimal?>("NewSalary")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("OldRank")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<decimal?>("OldSalary")
+                        .HasColumnType("decimal(65,30)");
+
                     b.Property<string>("Reason")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("UserId")
@@ -438,7 +457,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("HRActions", (string)null);
+                    b.ToTable("HRActions");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.MenuItem", b =>
@@ -472,7 +491,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasIndex("ParentId");
 
-                    b.ToTable("MenuItems", (string)null);
+                    b.ToTable("MenuItems");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.MenuItemRole", b =>
@@ -487,7 +506,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("MenuItemRoles", (string)null);
+                    b.ToTable("MenuItemRoles");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.Paygrade", b =>
@@ -506,7 +525,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Paygrades", (string)null);
+                    b.ToTable("Paygrades");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.Rank", b =>
@@ -546,7 +565,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Ranks", (string)null);
+                    b.ToTable("Ranks");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.RolePermission", b =>
@@ -554,13 +573,12 @@ namespace statenet_lspd.Migrations
                     b.Property<string>("RoleId")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("Permission")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
+                    b.Property<int>("Permission")
+                        .HasColumnType("int");
 
                     b.HasKey("RoleId", "Permission");
 
-                    b.ToTable("RolePermissions", (string)null);
+                    b.ToTable("RolePermissions");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.Sanktion", b =>
@@ -607,7 +625,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasIndex("Kategorie");
 
-                    b.ToTable("Sanktionen", (string)null);
+                    b.ToTable("Sanktionen");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.ServiceInstruction", b =>
@@ -634,7 +652,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ServiceInstructions", (string)null);
+                    b.ToTable("ServiceInstructions");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.Unit", b =>
@@ -646,7 +664,6 @@ namespace statenet_lspd.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
@@ -657,7 +674,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Units", (string)null);
+                    b.ToTable("Units");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.UserInstructionAcceptance", b =>
@@ -684,7 +701,7 @@ namespace statenet_lspd.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserInstructionAcceptances", (string)null);
+                    b.ToTable("UserInstructionAcceptances");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
