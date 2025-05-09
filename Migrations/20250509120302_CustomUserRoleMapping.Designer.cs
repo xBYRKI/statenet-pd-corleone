@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using statenet_lspd.Data;
 
@@ -11,9 +12,11 @@ using statenet_lspd.Data;
 namespace statenet_lspd.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250509120302_CustomUserRoleMapping")]
+    partial class CustomUserRoleMapping
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -353,8 +356,6 @@ namespace statenet_lspd.Migrations
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
-
-                    b.HasIndex("RankId");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -770,15 +771,6 @@ namespace statenet_lspd.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("statenet_lspd.Models.ApplicationUser", b =>
-                {
-                    b.HasOne("statenet_lspd.Models.Rank", "Rank")
-                        .WithMany()
-                        .HasForeignKey("RankId");
-
-                    b.Navigation("Rank");
                 });
 
             modelBuilder.Entity("statenet_lspd.Models.AuditLog", b =>

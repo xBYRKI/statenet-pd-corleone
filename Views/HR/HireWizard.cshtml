@@ -1,109 +1,117 @@
 @model HireWizardViewModel
 @using statenet_lspd.Models
+@using statenet_lspd.Helpers
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 @{
     ViewData["Title"] = "Mitarbeiter einstellen";
     var ranks = (List<Rank>)ViewBag.Ranks;
-    var allPaygrades = (List<int>)ViewBag.AllPaygrades;
+    /* allPaygrades nicht mehr benötigt, da JS dynamisch befüllt */
 }
 
-<form asp-action="HireWizard" method="post" novalidate>
-    <div class="tabs flex border-b mb-4">
-        <button type="button" data-step="1" class="tab px-4 py-2 bg-green-100">1. Basisdaten</button>
-        <button type="button" data-step="2" class="tab px-4 py-2">2. Rang &amp; Besoldung</button>
-        <button type="button" data-step="3" class="tab px-4 py-2">3. Checkliste</button>
+<div class="max-w-6xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div class="flex flex-col">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-user-plus text-green-600 dark:text-green-400"></i>
+                Neuer Mitarbeiter</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Schritt für Schritt einen neuen Mitarbeiter einstellen</p>
+        </div>
     </div>
 
-    <div id="step-1" class="step-content">
-        <div class="mb-4">
-            <label asp-for="Step1.FullName"></label>
-            <input asp-for="Step1.FullName" class="w-full p-2 border" />
-            <span asp-validation-for="Step1.FullName" class="text-red-500"></span>
+    <form asp-action="HireWizard" method="post" novalidate>
+        @Html.AntiForgeryToken()
+
+        <div class="tabs flex border-b mb-4 space-x-2">
+            <button type="button" data-step="1" class="tab px-4 py-2 rounded-t-lg bg-green-100">1. Basisdaten</button>
+            <button type="button" data-step="2" class="tab px-4 py-2 rounded-t-lg bg-gray-200">2. Rang &amp; Besoldung</button>
+            <button type="button" data-step="3" class="tab px-4 py-2 rounded-t-lg bg-gray-200">3. Checkliste</button>
         </div>
-        <div class="mb-4 flex items-end">
-            <div class="flex-1">
-                <label asp-for="Step1.Dienstnummer"></label>
-                <input asp-for="Step1.Dienstnummer" class="w-full p-2 border" readonly />
-                <span asp-validation-for="Step1.Dienstnummer" class="text-red-500"></span>
+
+        <div id="step-1" class="step-content">
+            <div class="mb-4">
+                <label asp-for="Step1.FullName" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                <input asp-for="Step1.FullName" class="mt-1 block w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:text-white" />
+                <span asp-validation-for="Step1.FullName" class="text-red-500 text-sm"></span>
             </div>
-            <button type="button" id="genDn" class="ml-4 px-4 py-2 bg-blue-500 text-white rounded">Generieren</button>
+            <div class="mb-4 flex items-end space-x-4">
+                <div class="flex-1">
+                    <label asp-for="Step1.Dienstnummer" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                    <input asp-for="Step1.Dienstnummer" class="mt-1 block w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-700" readonly />
+                    <span asp-validation-for="Step1.Dienstnummer" class="text-red-500 text-sm"></span>
+                </div>
+                <button type="button" id="genDn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">Generieren</button>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Step1.Birthday" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                <input asp-for="Step1.Birthday" type="date" class="mt-1 block w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:text-white" />
+                <span asp-validation-for="Step1.Birthday" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Step1.Phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                <input asp-for="Step1.Phone" class="mt-1 block w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:text-white" />
+                <span asp-validation-for="Step1.Phone" class="text-red-500 text-sm"></span>
+            </div>
         </div>
-        <div class="mb-4">
-            <label asp-for="Step1.Birthday"></label>
-            <input asp-for="Step1.Birthday" type="date" class="w-full p-2 border" />
-            <span asp-validation-for="Step1.Birthday" class="text-red-500"></span>
-        </div>
-        <div class="mb-4">
-            <label asp-for="Step1.Phone"></label>
-            <input asp-for="Step1.Phone" class="w-full p-2 border" />
-            <span asp-validation-for="Step1.Phone" class="text-red-500"></span>
-        </div>
-    </div>
 
-    <div id="step-2" class="step-content hidden">
-        <div class="mb-4">
-            <label asp-for="Step2.RankId"></label>
-            <select asp-for="Step2.RankId" class="w-full p-2 border" id="rankSelect">
-                <option value="">-- bitte wählen --</option>
-                @foreach(var r in ranks)
-                {
-                    <option value="@r.Id">@r.Name</option>
-                }
-            </select>
-            <span asp-validation-for="Step2.RankId" class="text-red-500"></span>
+        <div id="step-2" class="step-content hidden">
+            <div class="mb-4">
+                <label asp-for="Step2.RankId" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                <select asp-for="Step2.RankId" id="rankSelect" class="mt-1 block w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:text-white">
+                    <option value="">-- bitte wählen --</option>
+                    @foreach(var r in ranks)
+                    {
+                        <option value="@r.Id" data-min="@r.MinPayGrade" data-max="@r.MaxPayGrade">@r.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="Step2.RankId" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Step2.Paygrade" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                <select asp-for="Step2.Paygrade" id="paygradeSelect" class="mt-1 block w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:text-white">
+                    <option value="">-- bitte wählen --</option>
+                </select>
+                <span asp-validation-for="Step2.Paygrade" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Step2.PaygradeReason" class="block text-sm font-medium text-gray-700 dark:text-gray-300"></label>
+                <textarea asp-for="Step2.PaygradeReason" class="mt-1 block w-full p-2 border rounded-md bg-white dark:bg-gray-700 dark:text-white"></textarea>
+                <span asp-validation-for="Step2.PaygradeReason" class="text-red-500 text-sm"></span>
+            </div>
         </div>
-        <div class="mb-4">
-            <label asp-for="Step2.Paygrade"></label>
-            <select asp-for="Step2.Paygrade" class="w-full p-2 border" id="paygradeSelect">
-                <option value="">-- bitte wählen --</option>
-                @foreach(var pg in allPaygrades)
-                {
-                    <option value="@pg">@pg</option>
-                }
-            </select>
-            <span asp-validation-for="Step2.Paygrade" class="text-red-500"></span>
-        </div>
-        <div class="mb-4">
-            <label asp-for="Step2.PaygradeReason"></label>
-            <textarea asp-for="Step2.PaygradeReason" class="w-full p-2 border"></textarea>
-            <span asp-validation-for="Step2.PaygradeReason" class="text-red-500"></span>
-        </div>
-    </div>
 
-    <div id="step-3" class="step-content hidden">
-        <div class="mb-4 flex items-center">
-            <input asp-for="Step3.CopNetDone" type="checkbox" class="mr-2" />
-            <label asp-for="Step3.CopNetDone"></label>
-            <span asp-validation-for="Step3.CopNetDone" class="text-red-500 ml-2"></span>
+        <div id="step-3" class="step-content hidden">
+            <div class="mb-4 flex items-center space-x-2">
+                <input asp-for="Step3.CopNetDone" type="checkbox" class="h-4 w-4 text-green-600 border-gray-300 rounded" />
+                <label asp-for="Step3.CopNetDone" class="text-sm text-gray-700 dark:text-gray-300"></label>
+                <span asp-validation-for="Step3.CopNetDone" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="mb-4 flex items-center space-x-2">
+                <input asp-for="Step3.InstructionDone" type="checkbox" class="h-4 w-4 text-green-600 border-gray-300 rounded" />
+                <label asp-for="Step3.InstructionDone" class="text-sm text-gray-700 dark:text-gray-300"></label>
+                <span asp-validation-for="Step3.InstructionDone" class="text-red-500 text-sm"></span>
+            </div>
         </div>
-        <div class="mb-4 flex items-center">
-            <input asp-for="Step3.InstructionDone" type="checkbox" class="mr-2" />
-            <label asp-for="Step3.InstructionDone"></label>
-            <span asp-validation-for="Step3.InstructionDone" class="text-red-500 ml-2"></span>
-        </div>
-    </div>
 
-    <div class="mt-6 flex justify-between">
-        <button type="button" id="prevBtn" class="px-4 py-2 bg-gray-300" disabled>Zurück</button>
-        <button type="button" id="nextBtn" class="px-4 py-2 bg-green-500 text-white">Weiter</button>
-        <button type="submit" id="finishBtn" class="px-4 py-2 bg-blue-600 text-white hidden">Speichern</button>
-    </div>
-</form>
+        <div class="mt-6 flex justify-between">
+            <button type="button" id="prevBtn" class="px-4 py-2 bg-gray-300 rounded-md" disabled>Zurück</button>
+            <button type="button" id="nextBtn" class="px-4 py-2 bg-green-500 text-white rounded-md">Weiter</button>
+            <button type="submit" id="finishBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hidden">Speichern</button>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
         let currentStep = 1;
         function showStep(n) {
-            document.querySelectorAll('.step-content').forEach((el,i)=> {
-                el.classList.toggle('hidden', i+1 !== n);
-            });
-            document.getElementById('prevBtn').disabled = n===1;
-            document.getElementById('nextBtn').classList.toggle('hidden', n===3);
-            document.getElementById('finishBtn').classList.toggle('hidden', n!==3);
-            document.querySelectorAll('.tab').forEach((tab,i)=>{
-                tab.classList.toggle('bg-green-100', i+1===n);
-            });
+            document.querySelectorAll('.step-content').forEach((el,i)=> el.classList.toggle('hidden', i+1 !== n));
+            document.getElementById('prevBtn').disabled = n === 1;
+            document.getElementById('nextBtn').classList.toggle('hidden', n === 3);
+            document.getElementById('finishBtn').classList.toggle('hidden', n !== 3);
+            document.querySelectorAll('.tab').forEach((tab,i)=> tab.classList.toggle('bg-green-100', i+1 === n));
         }
         document.getElementById('nextBtn').onclick = ()=> { currentStep++; showStep(currentStep); }
         document.getElementById('prevBtn').onclick = ()=> { currentStep--; showStep(currentStep); }
@@ -116,18 +124,22 @@
                 .then(n=> document.querySelector('[name="Step1.Dienstnummer"]').value = n);
         });
 
-        // Optionale Client-seitige Filterung: Paygrade nur im Range des gewählten Rangs
-        const rankData = @Html.Raw(Json.Serialize(ranks.Select(r=>new{r.Id,r.MinPayGrade,r.MaxPayGrade})));
+        // Dynamische Besoldungsoptionen basierend auf Min/Max aus data-Attributen
         document.getElementById('rankSelect').addEventListener('change', e=>{
-            const sel = +e.target.value;
-            const cfg = rankData.find(r=>r.Id===sel);
-            const pgSel = document.getElementById('paygradeSelect');
-            pgSel.querySelectorAll('option').forEach(opt=>{
-                const val=+opt.value;
-                if (!val) return; // Überschrift
-                const ok = cfg && val>=cfg.MinPayGrade && val<=cfg.MaxPayGrade;
-                opt.disabled = !ok;
-            });
+            const selOpt = e.target.selectedOptions[0];
+            const min = parseInt(selOpt.getAttribute('data-min'));
+            const max = parseInt(selOpt.getAttribute('data-max'));
+            const paySelect = document.getElementById('paygradeSelect');
+            // Entferne alle Optionen außer Platzhalter
+            paySelect.innerHTML = '<option value="">-- bitte wählen --</option>';
+            if (!isNaN(min) && !isNaN(max)) {
+                for (let i = min; i <= max; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.text = i;
+                    paySelect.appendChild(opt);
+                }
+            }
         });
     </script>
 }

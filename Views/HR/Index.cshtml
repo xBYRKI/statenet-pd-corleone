@@ -1,8 +1,7 @@
 @addTagHelper *, Microsoft.AspNetCore.Authorization.TagHelpers
 @model IEnumerable<statenet_lspd.Models.ApplicationUser>
-@using System.Security.Claims
 @using statenet_lspd.Helpers
-@using Microsoft.AspNetCore.Authorization  @* Für IAuthorizationService *@
+@using Microsoft.AspNetCore.Authorization
 @inject IAuthorizationService AuthorizationService
 
 @{
@@ -15,28 +14,24 @@
     var canCreate = (await AuthorizationService.AuthorizeAsync(User, nameof(Permission.HR_Create))).Succeeded;
 }
 
-<div id="hrModalContainer"></div>
 <div class="max-w-7xl mx-auto mt-10 px-6 py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div class="flex flex-col">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <i class="fa-solid fa-briefcase text-green-600 dark:text-green-400"></i>
                 Mitarbeiterverwaltung
             </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400">Verwalte alle Mitarbeiter der LSPD</p>
         </div>
-        @* Button zum Neuen Mitarbeiter einstellen *@
         @if (canCreate)
         {
-            <button onclick="openHireModal()"
-                    class="mt-4 sm:mt-0 inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-medium transition">
+            <a asp-action="HireWizard"
+               class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-medium transition">
                 <i class="fa-solid fa-user-plus mr-2"></i> Neuen Mitarbeiter einstellen
-            </button>
+            </a>
         }
     </div>
 
-    <!-- Tabs -->
     <nav class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
         <a asp-action="Index" asp-route-showTerminated="false" asp-route-search="@searchTerm" asp-route-onlyDiscord="@onlyDiscordVal"
            class="px-4 py-2 -mb-px border-b-2 text-sm font-medium @(showTerminated ? "border-transparent text-gray-500 hover:text-gray-700" : "border-green-500 text-green-600")">Aktive</a>
@@ -44,19 +39,17 @@
            class="ml-4 px-4 py-2 -mb-px border-b-2 text-sm font-medium @(showTerminated ? "border-red-500 text-red-600" : "border-transparent text-gray-500 hover:text-gray-700")">Gekündigte</a>
     </nav>
 
-    <!-- Search/Form -->
-    <form method="get" class="flex items-center mb-6">
+    <form method="get" class="flex items-center mb-6 space-x-4">
         <input type="hidden" name="showTerminated" value="@(showTerminated ? "true" : "false")" />
         <input name="search" value="@searchTerm" type="text" placeholder="Suchen..." oninput="this.form.submit()"
                class="flex-1 p-2 border rounded shadow-sm bg-white dark:bg-gray-700 dark:text-white" />
-        <label class="ml-4 inline-flex items-center text-sm text-gray-700 dark:text-gray-300">
+        <label class="inline-flex items-center text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" name="onlyDiscord" value="true" @(onlyDiscordVal=="true"?"checked":"") onchange="this.form.submit()"
                    class="rounded border-gray-300 dark:border-gray-600" />
             <span class="ml-2">Nur mit Discord-ID</span>
         </label>
     </form>
 
-    <!-- Table -->
     <div class="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
         <table class="min-w-full table-auto text-sm">
             <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
@@ -64,20 +57,29 @@
                     <th class="px-4 py-2 text-left">Dienstnummer</th>
                     <th class="px-4 py-2 text-left">Name</th>
                     <th class="px-4 py-2 text-left">Benutzername</th>
+                    <th class="px-4 py-2 text-left">Rang</th>
+                    <th class="px-4 py-2 text-left">Besoldung</th>
                     <th class="px-4 py-2 text-left">Status</th>
                     <th class="px-4 py-2 text-left">Letzter Login</th>
                     <th class="px-4 py-2 text-right">Aktionen</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                @foreach(var user in Model)
+                @foreach (var user in Model)
                 {
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td class="px-4 py-2">@user.Dienstnummer</td>
                         <td class="px-4 py-2">@user.Displayname</td>
                         <td class="px-4 py-2">@user.UserName</td>
                         <td class="px-4 py-2">
-                            @if(user.Status == true)
+                            @if (user.Rank != null)
+                            {
+                                <span class="px-2 py-1 text-xs font-semibold rounded" style="background-color:@user.Rank.ColorHex; color:white;">@user.Rank.Name</span>
+                            }
+                        </td>
+                        <td class="px-4 py-2">@user.Besoldung</td>
+                        <td class="px-4 py-2">
+                            @if (user.Status == true)
                             {
                                 <span class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">Angestellt</span>
                             }
@@ -91,11 +93,11 @@
                             <a asp-action="Edit" asp-route-id="@user.Id" class="text-blue-600 hover:underline">
                                 <i class="fa-solid fa-pen-to-square mr-1"></i> Bearbeiten
                             </a>
-                            @if(user.Status == true)
+                            @if (user.Status == true)
                             {
-                                <button onclick="openTerminateModal('@user.Id')" class="text-red-600 hover:underline">
+                                <a asp-action="Terminate" asp-route-id="@user.Id" class="text-red-600 hover:underline">
                                     <i class="fa-solid fa-user-slash mr-1"></i> Kündigen
-                                </button>
+                                </a>
                             }
                         </td>
                     </tr>
@@ -103,13 +105,12 @@
             </tbody>
         </table>
     </div>
-    
-    <!-- Pagination -->
-    @if(totalPages > 1)
+
+    @if (totalPages > 1)
     {
-        <nav class="mt-4 flex justify-center">
+        <nav class="mt-6 flex justify-center">
             <ul class="inline-flex -space-x-px">
-                @for(int p = 1; p <= totalPages; p++)
+                @for (int p = 1; p <= totalPages; p++)
                 {
                     var isCurrent = p == currentPage;
                     <li>
@@ -123,25 +124,3 @@
         </nav>
     }
 </div>
-
-@section Scripts {
-    <script>
-        function openHireModal() {
-            fetch('@Url.Action("Hire","HR")')
-                .then(r => r.text())
-                .then(html => {
-                    document.getElementById('hrModalContainer').innerHTML = html;
-                    toggleModal('hireModal');
-                });
-        }
-        function openTerminateModal(id) {
-            fetch('@Url.Action("Terminate","HR")/' + id)
-                .then(r => r.text())
-                .then(html => {
-                    document.getElementById('hrModalContainer').innerHTML = html;
-                    toggleModal('terminateModal');
-                });
-        }
-        // TODO: Additional JS for Sanction, Promotion, Demotion, Suspension
-    </script>
-}

@@ -42,6 +42,9 @@ namespace statenet_lspd.Models
         [Column("rangs_id")]
         public int? RankId { get; set; }
 
+        [ForeignKey(nameof(RankId))]
+        public Rank? Rank { get; set; }
+
         [Column("teams_id")]
         public int? TeamId { get; set; }
 
